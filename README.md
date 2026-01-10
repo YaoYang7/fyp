@@ -1,2 +1,1 @@
-# fyp
-Multi Tenant Blog Platform
+# Multi Tenant Blog Platform
