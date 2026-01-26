@@ -5,8 +5,6 @@ interface User {
   id: number
   username: string
   email: string
-  full_name: string
-  is_active: boolean
   created_at: string
 }
 
@@ -52,15 +50,13 @@ function Users() {
               <th>ID</th>
               <th>Username</th>
               <th>Email</th>
-              <th>Full Name</th>
-              <th>Status</th>
               <th>Created At</th>
             </tr>
           </thead>
           <tbody>
             {users.length === 0 ? (
               <tr>
-                <td colSpan={6} style={{ textAlign: 'center' }}>
+                <td colSpan={4} style={{ textAlign: 'center' }}>
                   No users found
                 </td>
               </tr>
@@ -70,12 +66,6 @@ function Users() {
                   <td>{user.id}</td>
                   <td>{user.username}</td>
                   <td>{user.email}</td>
-                  <td>{user.full_name}</td>
-                  <td>
-                    <span className={user.is_active ? 'badge active' : 'badge inactive'}>
-                      {user.is_active ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
                   <td>{new Date(user.created_at).toLocaleDateString()}</td>
                 </tr>
               ))

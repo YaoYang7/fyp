@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Box, Button, TextField, Typography, Paper, Link } from '@mui/material';
+import { Box, Button, TextField, Typography, Paper, Link, Alert, CircularProgress } from '@mui/material';
 import IconButton from "@mui/material/IconButton";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import { userApi } from '../services/usersAPI';
 
 interface FormData {
-  userName: string;
+  username: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -17,7 +18,7 @@ interface RegisterProps {
 
 export default function Register(props: RegisterProps) {
   const [formData, setFormData] = useState<FormData>({
-    userName: '',
+    username: '',
     email: '',
     password: '',
     confirmPassword: ''
@@ -26,6 +27,8 @@ export default function Register(props: RegisterProps) {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState<string>('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -38,8 +41,8 @@ export default function Register(props: RegisterProps) {
   const validate = (): boolean => {
     const newErrors: Partial<FormData> = {};
 
-    if (!formData.userName.trim()) {
-      newErrors.userName = 'Username is required';
+    if (!formData.username.trim()) {
+      newErrors.username = 'Username is required';
     }
 
     if (!formData.email.trim()) {
@@ -62,10 +65,34 @@ export default function Register(props: RegisterProps) {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (validate()) {
-      setIsSubmitted(true);
-      console.log('Form submitted:', formData);
+      setLoading(true);
+      setApiError('');
+
+      try {
+        await userApi.register({
+          username: formData.username,
+          email: formData.email,
+          password: formData.password
+        });
+
+        setIsSubmitted(true);
+      } catch (error: any) {
+        console.error('Registration error:', error);
+
+        if (error.response?.data?.detail) {
+          setApiError(error.response.data.detail);
+        } else if (error.response?.status === 400) {
+          setApiError('Username or email already exists. Please try another.');
+        } else if (error.message) {
+          setApiError(`Registration failed: ${error.message}`);
+        } else {
+          setApiError('Registration failed. Please try again.');
+        }
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -84,14 +111,14 @@ export default function Register(props: RegisterProps) {
               Registration Successful!
             </Typography>
             <Typography variant="body2" sx={{ color: '#666', mb: 3 }}>
-              Welcome, {formData.userName}! Your account has been created successfully.
+              Welcome, {formData.username}! Your account has been created successfully.
             </Typography>
             <Button
               variant="outlined"
               color="primary"
-              onClick={() => setIsSubmitted(false)}
+              onClick={props.onSwitchToLogin}
             >
-              Login
+              Go to Login
             </Button>
           </Box>
         </Paper>
@@ -111,15 +138,21 @@ export default function Register(props: RegisterProps) {
           Create an account to get started
         </Typography>
 
+        {apiError && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {apiError}
+          </Alert>
+        )}
+
         <TextField
           label="Username"
-          name="userName"
-          value={formData.userName}
+          name="username"
+          value={formData.username}
           onChange={handleChange}
           fullWidth
           margin="normal"
-          error={!!errors.userName}
-          helperText={errors.userName}
+          error={!!errors.username}
+          helperText={errors.username}
         />
 
         <TextField
@@ -189,9 +222,17 @@ export default function Register(props: RegisterProps) {
           color="primary"
           fullWidth
           onClick={handleSubmit}
+          disabled={loading}
           sx={{ mt: 3 }}
         >
-          Register
+          {loading ? (
+            <>
+              <CircularProgress size={20} sx={{ mr: 1 }} color="inherit" />
+              Registering...
+            </>
+          ) : (
+            'Register'
+          )}
         </Button>
 
         <Typography variant="body2" align="center" sx={{ mt: 2, color: '#666' }}>
