@@ -38,28 +38,10 @@ def register_user(db: Session, user: schemas.UserCreate):
     db.refresh(db_user)
     return db_user
 
-def update_user(db: Session, user_id: int, user: schemas.UserUpdate):
-    db_user = db.query(models.User).filter(models.User.id == user_id).first()
-    if db_user:
-        update_data = user.dict(exclude_unset=True)
-        for key, value in update_data.items():
-            setattr(db_user, key, value)
-        db.commit()
-        db.refresh(db_user)
-    return db_user
-
-def update_user_password(db: Session, user_id: int, current_password: str, new_password: str):
-    db_user = db.query(models.User).filter(models.User.id == user_id).first()
-    if db_user and verify_password(current_password, db_user.password_hash):
-        db_user.password_hash = get_password_hash(new_password)
-        db.commit()
-        db.refresh(db_user)
-        return db_user
-    return None
-
-def delete_user(db: Session, user_id: int):
-    db_user = db.query(models.User).filter(models.User.id == user_id).first()
-    if db_user:
-        db.delete(db_user)
-        db.commit()
-    return db_user
+def login_user(db: Session, username: str, password: str):
+    user = get_user_by_username(db, username=username)
+    if not user:
+        return None
+    if not verify_password(password, user.password_hash):
+        return None
+    return user

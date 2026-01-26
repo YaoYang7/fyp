@@ -27,3 +27,11 @@ class User(UserBase):
 
 class UserInDB(User):
     password_hash: str
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+class LoginResponse(BaseModel):
+    message: str
+    user: User

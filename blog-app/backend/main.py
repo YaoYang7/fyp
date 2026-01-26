@@ -33,8 +33,8 @@ app.add_middleware(
 def read_root():
     return {"message": "User Management API is running"}
 
-@app.post("/api/register", response_model=schemas.User, status_code=201)
-def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+@app.post("/user_api/register", response_model=schemas.User, status_code=201)
+def register_user_endpoint(user: schemas.UserCreate, db: Session = Depends(get_db)):
     """
     Register a new user account
     """
@@ -50,3 +50,17 @@ def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
     # Create the new user
     return crud.register_user(db=db, user=user)
+
+@app.post("/user_api/login", response_model=schemas.LoginResponse)
+def login_user_endpoint(user_login: schemas.UserLogin, db: Session = Depends(get_db)):
+    """
+    Authenticate a user and log them in
+    """
+    user = crud.login_user(db, username=user_login.username, password=user_login.password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+
+    return schemas.LoginResponse(
+        message="Login successful",
+        user=user
+    )

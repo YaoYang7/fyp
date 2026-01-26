@@ -13,6 +13,7 @@ import {
 import Register from "../components/Register";
 import Login from "../components/Login";
 import LandingComponent from "../components/Landing";
+import { useAppSelector } from "../store/hooks";
 
 const drawerWidth = 240;
 
@@ -25,7 +26,7 @@ const sidePanelItems = [
 type ContentKey = "home" | "register" | "login";
 
 const HomePage: React.FC = () => {
-
+    const { isLoggedIn, user } = useAppSelector((state) => state.auth);
     const [currentContent, setCurrentContent] = useState<ContentKey>("home");
 
     const renderCurrentContent = () => {
@@ -45,7 +46,10 @@ const HomePage: React.FC = () => {
                 return (
                     <>
                         <Typography variant="h4" gutterBottom>Login</Typography>
-                        <Login onSwitchToRegister={() => setCurrentContent("register")}/>
+                        <Login
+                            onSwitchToRegister={() => setCurrentContent("register")}
+                            onLoginSuccess={() => setCurrentContent("home")}
+                        />
                     </>
                 );
             default:
@@ -60,6 +64,11 @@ const HomePage: React.FC = () => {
             <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
                 <Toolbar>
                     <Typography variant="h6" sx={{ flexGrow: 1, textAlign: "center" }}>Blog Application / Platform</Typography>
+                    {isLoggedIn && user && (
+                        <Typography variant="body1" sx={{ color: 'white' }}>
+                            Welcome, {user.username}
+                        </Typography>
+                    )}
                 </Toolbar>
             </AppBar>
 
@@ -77,12 +86,20 @@ const HomePage: React.FC = () => {
                 <Toolbar />
                 <Box sx={{ overflow: "auto" }}>
                     <List>
-                        {sidePanelItems.map((item) => (
-                        <ListItem key={item.key} disablePadding>
-                            <ListItemButton selected={currentContent === item.key}onClick={() => setCurrentContent(item.key)}>
-                                <ListItemText primary={item.label} />
-                            </ListItemButton>
-                        </ListItem>
+                        {sidePanelItems
+                            .filter((item) => {
+                                // Hide Login and Register when user is logged in
+                                if (isLoggedIn && (item.key === 'login' || item.key === 'register')) {
+                                    return false;
+                                }
+                                return true;
+                            })
+                            .map((item) => (
+                            <ListItem key={item.key} disablePadding>
+                                <ListItemButton selected={currentContent === item.key}onClick={() => setCurrentContent(item.key)}>
+                                    <ListItemText primary={item.label} />
+                                </ListItemButton>
+                            </ListItem>
                         ))}
                     </List>
                 </Box>
