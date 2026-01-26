@@ -1,0 +1,204 @@
+import { useState } from 'react';
+import { Box, Button, TextField, Typography, Paper, Link } from '@mui/material';
+import IconButton from "@mui/material/IconButton";
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
+
+interface FormData {
+  userName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
+
+interface RegisterProps {
+  onSwitchToLogin: () => void;
+}
+
+export default function Register(props: RegisterProps) {
+  const [formData, setFormData] = useState<FormData>({
+    userName: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+  const [errors, setErrors] = useState<Partial<FormData>>({});
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name as keyof FormData]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const validate = (): boolean => {
+    const newErrors: Partial<FormData> = {};
+
+    if (!formData.userName.trim()) {
+      newErrors.userName = 'Username is required';
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Email is invalid';
+    }
+
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = () => {
+    if (validate()) {
+      setIsSubmitted(true);
+      console.log('Form submitted:', formData);
+    }
+  };
+
+  if (isSubmitted) {
+    return (
+      <Box 
+        sx={{
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center',
+        }}
+      >
+        <Paper elevation={3} sx={{ p: 4, maxWidth: '500px', width: '100%' }}>
+          <Box sx={{ textAlign: 'center' }}>
+            <Typography variant="h6" gutterBottom>
+              Registration Successful!
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#666', mb: 3 }}>
+              Welcome, {formData.userName}! Your account has been created successfully.
+            </Typography>
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={() => setIsSubmitted(false)}
+            >
+              Login
+            </Button>
+          </Box>
+        </Paper>
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',}}
+    >
+      <Paper elevation={3} sx={{ p: 4, maxWidth: '500px', width: '100%' }}>
+        <Typography variant="h4" gutterBottom>Register</Typography>
+        <Typography variant="body2" sx={{ color: '#666', mb: 3 }}>
+          Create an account to get started
+        </Typography>
+
+        <TextField
+          label="Username"
+          name="userName"
+          value={formData.userName}
+          onChange={handleChange}
+          fullWidth
+          margin="normal"
+          error={!!errors.userName}
+          helperText={errors.userName}
+        />
+
+        <TextField
+          label="Email Address"
+          name="email"
+          type="email"
+          value={formData.email}
+          onChange={handleChange}
+          fullWidth
+          margin="normal"
+          error={!!errors.email}
+          helperText={errors.email}
+        />
+
+        <TextField
+          label="Password"
+          name="password"
+          type={showPassword ? "text" : "password"}
+          value={formData.password}
+          onChange={handleChange}
+          fullWidth
+          margin="normal"
+          error={!!errors.password}
+          helperText={errors.password}
+          slotProps={{
+            input: {
+              endAdornment: (
+                <IconButton
+                  aria-label="toggle password visibility"
+                  onClick={() => setShowPassword(!showPassword)}
+                  onMouseDown={(e) => e.preventDefault()}
+                >
+                  {showPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              )
+            }
+          }}
+        />
+
+        <TextField
+          label="Confirm Password"
+          name="confirmPassword"
+          type={showConfirmPassword ? "text" : "password"}
+          value={formData.confirmPassword}
+          onChange={handleChange}
+          fullWidth
+          margin="normal"
+          error={!!errors.confirmPassword}
+          helperText={errors.confirmPassword}
+          slotProps={{
+            input: {
+              endAdornment: (
+                <IconButton
+                  aria-label="toggle password visibility"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  onMouseDown={(e) => e.preventDefault()}
+                >
+                  {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              )
+            }
+          }}
+        />
+
+        <Button
+          variant="contained"
+          color="primary"
+          fullWidth
+          onClick={handleSubmit}
+          sx={{ mt: 3 }}
+        >
+          Register
+        </Button>
+
+        <Typography variant="body2" align="center" sx={{ mt: 2, color: '#666' }}>
+          Already have an account?{' '}
+          <Link onClick={props.onSwitchToLogin} sx={{ cursor: "pointer" }}>Sign in</Link>
+        </Typography>
+      </Paper>
+    </Box>
+  );
+}
