@@ -286,34 +286,6 @@ const Dashboard: React.FC = () => {
               </Button>
             </Box>
           </Paper>
-
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" component="h2" gutterBottom>
-              Account Info
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Username
-                </Typography>
-                <Typography variant="body1">{user?.username}</Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Email
-                </Typography>
-                <Typography variant="body1">{user?.email}</Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Member Since
-                </Typography>
-                <Typography variant="body1">
-                  {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
-                </Typography>
-              </Box>
-            </Box>
-          </Paper>
         </Box>
       </Box>
     </Box>

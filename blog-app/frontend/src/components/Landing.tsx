@@ -44,10 +44,9 @@ const LandingComponent: React.FC<LandingProps> = (props) => {
             {/* Hero Section */}
             <Box
                 sx={{
-                    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                    background: "linear-gradient(135deg, #2196f3 0%, #81d4fa 100%)",
                     color: "white",
                     py: 12,
-                    minHeight: "70vh",
                     display: "flex",
                     alignItems: "center"
                 }}
@@ -78,9 +77,7 @@ const LandingComponent: React.FC<LandingProps> = (props) => {
                                 variant="h5"
                                 sx={{ mb: 4, opacity: 0.95, fontWeight: 300 }}
                             >
-                                Start your blogging journey today. Create, publish,
-                                and share your ideas with a platform built for modern
-                                content creators.
+                                Simple and easy to use, templates offered. Beginner friendly. Start your blogging journey today.
                             </Typography>
 
                             <Stack direction="row" spacing={2}>
@@ -128,24 +125,6 @@ const LandingComponent: React.FC<LandingProps> = (props) => {
 
             {/* Features Section */}
             <Container maxWidth="lg" sx={{ py: 10 }}>
-                <Typography
-                    variant="h3"
-                    align="center"
-                    gutterBottom
-                    sx={{ fontWeight: 600, mb: 2 }}
-                >
-                    Everything You Need to Blog
-                </Typography>
-
-                <Typography
-                    variant="h6"
-                    align="center"
-                    color="text.secondary"
-                    sx={{ mb: 6 }}
-                >
-                    Powerful features designed for content creators
-                </Typography>
-
                 <Box
                     sx={{
                         display: "grid",
@@ -159,7 +138,6 @@ const LandingComponent: React.FC<LandingProps> = (props) => {
                         <Card
                             key={index}
                             sx={{
-                                height: "100%",
                                 textAlign: "center",
                                 transition: "transform 0.2s",
                                 "&:hover": {

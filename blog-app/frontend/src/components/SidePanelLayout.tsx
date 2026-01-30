@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { logout } from '../store/auth/authActions';
+import AccountInfo from './AccountInfo';
 
 const drawerWidth = 240;
 
@@ -93,7 +94,8 @@ const SidePanelLayout: React.FC<SidePanelLayoutProps> = ({ children }) => {
         }}
       >
         <Toolbar />
-        <Box sx={{ overflow: 'auto' }}>
+        <Box sx={{ overflow: 'auto', display: 'flex', flexDirection: 'column', height: '100%' }}>
+          {isLoggedIn && <AccountInfo />}
           <List>
             {navigationItems
               .filter((item) => {
