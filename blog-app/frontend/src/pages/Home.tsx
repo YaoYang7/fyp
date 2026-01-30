@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Typography } from "@mui/material";
 import Register from "../components/Register";
 import Login from "../components/Login";
@@ -9,6 +9,7 @@ type ContentKey = "home" | "register" | "login";
 
 const HomePage: React.FC = () => {
     const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
     const [currentContent, setCurrentContent] = useState<ContentKey>("home");
 
     useEffect(() => {
@@ -37,7 +38,7 @@ const HomePage: React.FC = () => {
                         <Typography variant="h4" gutterBottom>Login</Typography>
                         <Login
                             onSwitchToRegister={() => setCurrentContent("register")}
-                            onLoginSuccess={() => setCurrentContent("home")}
+                            onLoginSuccess={() => navigate("/home")}
                         />
                     </>
                 );

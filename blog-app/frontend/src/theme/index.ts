@@ -42,6 +42,28 @@ const theme = createTheme({
         },
       },
     },
+    MuiDrawer: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: "#f5f5f5",
+        },
+      },
+    },
+    MuiListItemButton: {
+      styleOverrides: {
+        root: {
+          "&.Mui-selected": {
+            backgroundColor: "#d0d0d0",
+            "&:hover": {
+              backgroundColor: "#c0c0c0",
+            },
+          },
+          "&:hover": {
+            backgroundColor: "#e8e8e8",
+          },
+        },
+      },
+    },
   },
 });
 

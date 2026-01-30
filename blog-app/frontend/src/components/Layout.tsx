@@ -46,11 +46,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   const isCurrentPath = (path: string) => {
+    const currentPath = location.pathname + location.search;
+
     if (path.includes('?')) {
-      const [basePath] = path.split('?');
-      return location.pathname === basePath;
+      // For paths with query params, match the full URL
+      return currentPath === path;
     }
-    return location.pathname === path;
+
+    // For paths without query params, ensure current URL also has no query params
+    return currentPath === path && !location.search;
   };
 
   return (
