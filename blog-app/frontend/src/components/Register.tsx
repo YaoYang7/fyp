@@ -96,6 +96,12 @@ export default function Register(props: RegisterProps) {
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !loading) {
+      handleSubmit();
+    }
+  };
+
   if (isSubmitted) {
     return (
       <Box 
@@ -201,6 +207,7 @@ export default function Register(props: RegisterProps) {
           type={showConfirmPassword ? "text" : "password"}
           value={formData.confirmPassword}
           onChange={handleChange}
+          onKeyDown={handleKeyDown}
           fullWidth
           margin="normal"
           error={!!errors.confirmPassword}

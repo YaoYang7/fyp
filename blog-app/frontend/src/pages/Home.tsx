@@ -21,15 +21,21 @@ const HomePage: React.FC = () => {
         }
     }, [searchParams]);
 
+    const loginPath = "/home?view=login";
+    const registerPath = "/home?view=register";
+
     const renderCurrentContent = () => {
         switch (currentContent) {
             case "home":
-                return <LandingComponent />;
+                return <LandingComponent
+                            onSwitchToLogin={() => navigate(loginPath)}
+                            onSwitchToRegister={() => navigate(registerPath)}
+                        />;
             case "register":
                 return (
                     <>
                         <Typography variant="h4" gutterBottom>Register</Typography>
-                        <Register onSwitchToLogin={() => setCurrentContent("login")}/>
+                        <Register onSwitchToLogin={() => navigate(loginPath)}/>
                     </>
                 );
             case "login":
@@ -37,13 +43,16 @@ const HomePage: React.FC = () => {
                     <>
                         <Typography variant="h4" gutterBottom>Login</Typography>
                         <Login
-                            onSwitchToRegister={() => setCurrentContent("register")}
+                            onSwitchToRegister={() => navigate(registerPath)}
                             onLoginSuccess={() => navigate("/home")}
                         />
                     </>
                 );
             default:
-                return <LandingComponent />;
+                return <LandingComponent
+                            onSwitchToLogin={() => navigate(loginPath)}
+                            onSwitchToRegister={() => navigate(registerPath)}
+                        />;
         }
     };
 

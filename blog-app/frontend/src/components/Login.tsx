@@ -61,6 +61,12 @@ const Login: React.FC<LoginProps> = (props) => {
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !loading && username && password) {
+      handleLogin();
+    }
+  };
+
   return (
     <Box sx={{
       display: 'flex',
@@ -98,6 +104,7 @@ const Login: React.FC<LoginProps> = (props) => {
           margin="normal"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          onKeyDown={handleKeyDown}
           disabled={loading}
           autoComplete="current-password"
           slotProps={{

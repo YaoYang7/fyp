@@ -24,11 +24,11 @@ const navigationItems = [
   { label: 'Login', path: '/home?view=login', requiresAuth: false, authOnly: false },
 ] as const;
 
-interface LayoutProps {
+interface SidePanelLayoutProps {
   children: React.ReactNode;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const SidePanelLayout: React.FC<SidePanelLayoutProps> = ({ children }) => {
   const { isLoggedIn, user } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -97,8 +97,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <List>
             {navigationItems
               .filter((item) => {
-                // Hide Login and Register when user is logged in
-                if (isLoggedIn && (item.label === 'Login' || item.label === 'Register')) {
+                // Hide Home, Login and Register when user is logged in
+                if (isLoggedIn && (item.label === 'Home' || item.label === 'Login' || item.label === 'Register')) {
                   return false;
                 }
                 // Hide Dashboard when user is not logged in
@@ -117,6 +117,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </ListItemButton>
                 </ListItem>
               ))}
+            {isLoggedIn && (
+              <ListItem disablePadding>
+                <ListItemButton onClick={handleLogout}>
+                  <ListItemText primary="Logout" />
+                </ListItemButton>
+              </ListItem>
+            )}
           </List>
         </Box>
       </Drawer>
@@ -129,4 +136,4 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   );
 };
 
-export default Layout;
+export default SidePanelLayout;
