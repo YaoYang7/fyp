@@ -42,7 +42,12 @@ const Login: React.FC<LoginProps> = (props) => {
         throw new Error(data.detail || "Login failed");
       }
 
-      dispatch(loginSuccess(data.user));
+      // Store the JWT token in localStorage
+      if (data.token) {
+        localStorage.setItem('authToken', data.token);
+      }
+
+      dispatch(loginSuccess(data.user, data.token));
       console.log("Login successful:", data);
 
       // Navigate to home after successful login

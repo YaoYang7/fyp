@@ -1,9 +1,10 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import or_, func, desc
 from . import models, schemas
 from .security import get_password_hash, verify_password
-from typing import Optional
+from typing import Optional, List
 
+# User CRUD Operations
 def get_users(db: Session, skip: int = 0, limit: int = 100, search: Optional[str] = None):
     query = db.query(models.User)
 
@@ -45,3 +46,168 @@ def login_user(db: Session, username: str, password: str):
     if not verify_password(password, user.password_hash):
         return None
     return user
+
+# Blog Post CRUD Operations
+def create_post(db: Session, post: schemas.BlogPostCreate, user_id: int):
+    db_post = models.BlogPost(
+        title=post.title,
+        content=post.content,
+        excerpt=post.excerpt,
+        status=post.status,
+        author_id=user_id
+    )
+    db.add(db_post)
+    db.commit()
+    db.refresh(db_post)
+    return db_post
+
+def get_post(db: Session, post_id: int):
+    return db.query(models.BlogPost).filter(models.BlogPost.id == post_id).first()
+
+def get_user_posts(db: Session, user_id: int, skip: int = 0, limit: int = 100):
+    return db.query(models.BlogPost).filter(
+        models.BlogPost.author_id == user_id
+    ).order_by(desc(models.BlogPost.created_at)).offset(skip).limit(limit).all()
+
+def get_recent_posts(db: Session, user_id: int, limit: int = 10):
+    return db.query(models.BlogPost).filter(
+        models.BlogPost.author_id == user_id
+    ).order_by(desc(models.BlogPost.created_at)).limit(limit).all()
+
+def update_post(db: Session, post_id: int, post_update: schemas.BlogPostUpdate):
+    db_post = get_post(db, post_id)
+    if not db_post:
+        return None
+
+    update_data = post_update.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(db_post, field, value)
+
+    db.commit()
+    db.refresh(db_post)
+    return db_post
+
+def delete_post(db: Session, post_id: int):
+    db_post = get_post(db, post_id)
+    if not db_post:
+        return False
+
+    db.delete(db_post)
+    db.commit()
+    return True
+
+def increment_post_views(db: Session, post_id: int):
+    db_post = get_post(db, post_id)
+    if db_post:
+        db_post.views += 1
+        db.commit()
+        db.refresh(db_post)
+    return db_post
+
+def search_posts(db: Session, query: str, user_id: int):
+    return db.query(models.BlogPost).filter(
+        models.BlogPost.author_id == user_id,
+        or_(
+            models.BlogPost.title.ilike(f"%{query}%"),
+            models.BlogPost.content.ilike(f"%{query}%")
+        )
+    ).order_by(desc(models.BlogPost.created_at)).all()
+
+# Comment CRUD Operations
+def create_comment(db: Session, comment: schemas.CommentCreate, user_id: int):
+    db_comment = models.Comment(
+        content=comment.content,
+        author_id=user_id,
+        post_id=comment.post_id
+    )
+    db.add(db_comment)
+    db.commit()
+    db.refresh(db_comment)
+    return db_comment
+
+def get_post_comments(db: Session, post_id: int):
+    return db.query(models.Comment).filter(
+        models.Comment.post_id == post_id
+    ).order_by(desc(models.Comment.created_at)).all()
+
+def get_comment(db: Session, comment_id: int):
+    return db.query(models.Comment).filter(models.Comment.id == comment_id).first()
+
+def delete_comment(db: Session, comment_id: int):
+    db_comment = get_comment(db, comment_id)
+    if not db_comment:
+        return False
+
+    db.delete(db_comment)
+    db.commit()
+    return True
+
+# Follower CRUD Operations
+def follow_user(db: Session, follower_id: int, following_id: int):
+    # Check if already following
+    existing = db.query(models.Follower).filter(
+        models.Follower.follower_id == follower_id,
+        models.Follower.following_id == following_id
+    ).first()
+
+    if existing:
+        return existing
+
+    db_follower = models.Follower(
+        follower_id=follower_id,
+        following_id=following_id
+    )
+    db.add(db_follower)
+    db.commit()
+    db.refresh(db_follower)
+    return db_follower
+
+def unfollow_user(db: Session, follower_id: int, following_id: int):
+    db_follower = db.query(models.Follower).filter(
+        models.Follower.follower_id == follower_id,
+        models.Follower.following_id == following_id
+    ).first()
+
+    if not db_follower:
+        return False
+
+    db.delete(db_follower)
+    db.commit()
+    return True
+
+def get_user_followers(db: Session, user_id: int):
+    return db.query(models.Follower).filter(
+        models.Follower.following_id == user_id
+    ).all()
+
+def get_user_following(db: Session, user_id: int):
+    return db.query(models.Follower).filter(
+        models.Follower.follower_id == user_id
+    ).all()
+
+# Dashboard Statistics
+def get_dashboard_stats(db: Session, user_id: int):
+    total_posts = db.query(func.count(models.BlogPost.id)).filter(
+        models.BlogPost.author_id == user_id
+    ).scalar()
+
+    total_views = db.query(func.sum(models.BlogPost.views)).filter(
+        models.BlogPost.author_id == user_id
+    ).scalar() or 0
+
+    total_comments = db.query(func.count(models.Comment.id)).join(
+        models.BlogPost
+    ).filter(
+        models.BlogPost.author_id == user_id
+    ).scalar()
+
+    total_followers = db.query(func.count(models.Follower.id)).filter(
+        models.Follower.following_id == user_id
+    ).scalar()
+
+    return {
+        "totalPosts": total_posts,
+        "totalViews": total_views,
+        "totalComments": total_comments,
+        "totalFollowers": total_followers
+    }

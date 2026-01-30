@@ -5,20 +5,13 @@ from typing import List, Optional
 
 from app import models, schemas, crud
 from app.db import engine, get_db
+from app.auth import get_current_user
+from app.security import create_access_token
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="User Management API", version="1.0.0")
-
-# # CORS Configuration
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["http://localhost:5173"],
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
+app = FastAPI(title="Blog Application API", version="1.0.0")
 
 # CORS Configuration
 app.add_middleware(
@@ -31,8 +24,9 @@ app.add_middleware(
 
 @app.get("/")
 def read_root():
-    return {"message": "User Management API is running"}
+    return {"message": "Blog Application API is running"}
 
+# User Authentication Endpoints
 @app.post("/user_api/register", response_model=schemas.User, status_code=201)
 def register_user_endpoint(user: schemas.UserCreate, db: Session = Depends(get_db)):
     """
@@ -60,7 +54,238 @@ def login_user_endpoint(user_login: schemas.UserLogin, db: Session = Depends(get
     if not user:
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
+    # Create JWT token
+    access_token = create_access_token(data={"sub": str(user.id)})
+
     return schemas.LoginResponse(
         message="Login successful",
-        user=user
+        user=user,
+        token=access_token
     )
+
+# Helper function to format blog post for frontend
+def format_blog_post(post: models.BlogPost, db: Session) -> dict:
+    """
+    Format a BlogPost model to match the frontend BlogPost interface
+    """
+    comments_count = len(post.comments) if post.comments else 0
+
+    return {
+        "id": post.id,
+        "title": post.title,
+        "content": post.content,
+        "excerpt": post.excerpt,
+        "author": post.author.username,
+        "author_id": post.author_id,
+        "date": post.created_at.strftime("%Y-%m-%d"),
+        "views": post.views,
+        "comments": comments_count,
+        "status": post.status.value,
+        "created_at": post.created_at.isoformat(),
+        "updated_at": post.updated_at.isoformat() if post.updated_at else None
+    }
+
+# Dashboard Endpoints
+@app.get("/api/dashboard/stats", response_model=schemas.DashboardStats)
+def get_dashboard_stats(
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get dashboard statistics for the current user
+    """
+    stats = crud.get_dashboard_stats(db, user_id=current_user.id)
+    return stats
+
+# Blog Post Endpoints
+@app.get("/api/posts/recent")
+def get_recent_posts(
+    limit: int = Query(default=10, ge=1, le=100),
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get recent posts for the current user
+    """
+    posts = crud.get_recent_posts(db, user_id=current_user.id, limit=limit)
+    return [format_blog_post(post, db) for post in posts]
+
+@app.get("/api/posts/user")
+def get_user_posts(
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=100, ge=1, le=100),
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all posts for the current user
+    """
+    posts = crud.get_user_posts(db, user_id=current_user.id, skip=skip, limit=limit)
+    return [format_blog_post(post, db) for post in posts]
+
+@app.get("/api/posts/{post_id}")
+def get_post(
+    post_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get a specific post by ID
+    """
+    post = crud.get_post(db, post_id=post_id)
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    # Check if the current user owns this post
+    if post.author_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to view this post")
+
+    # Increment view count
+    crud.increment_post_views(db, post_id=post_id)
+
+    return format_blog_post(post, db)
+
+@app.post("/api/posts", status_code=201)
+def create_post(
+    post: schemas.BlogPostCreate,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Create a new blog post
+    """
+    new_post = crud.create_post(db, post=post, user_id=current_user.id)
+    return format_blog_post(new_post, db)
+
+@app.put("/api/posts/{post_id}")
+def update_post(
+    post_id: int,
+    post_update: schemas.BlogPostUpdate,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Update an existing blog post
+    """
+    existing_post = crud.get_post(db, post_id=post_id)
+    if not existing_post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    # Check if the current user owns this post
+    if existing_post.author_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to update this post")
+
+    updated_post = crud.update_post(db, post_id=post_id, post_update=post_update)
+    return format_blog_post(updated_post, db)
+
+@app.delete("/api/posts/{post_id}", status_code=204)
+def delete_post(
+    post_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a blog post
+    """
+    existing_post = crud.get_post(db, post_id=post_id)
+    if not existing_post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    # Check if the current user owns this post
+    if existing_post.author_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this post")
+
+    crud.delete_post(db, post_id=post_id)
+    return None
+
+@app.get("/api/posts/search")
+def search_posts(
+    q: str = Query(..., min_length=1),
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Search posts by title or content
+    """
+    posts = crud.search_posts(db, query=q, user_id=current_user.id)
+    return [format_blog_post(post, db) for post in posts]
+
+# Comment Endpoints
+@app.get("/api/posts/{post_id}/comments")
+def get_post_comments(
+    post_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all comments for a specific post
+    """
+    post = crud.get_post(db, post_id=post_id)
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    comments = crud.get_post_comments(db, post_id=post_id)
+    return comments
+
+@app.post("/api/posts/{post_id}/comments", status_code=201)
+def create_comment(
+    post_id: int,
+    comment: schemas.CommentCreate,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Create a new comment on a post
+    """
+    post = crud.get_post(db, post_id=post_id)
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    new_comment = crud.create_comment(db, comment=comment, user_id=current_user.id)
+    return new_comment
+
+# Follower Endpoints
+@app.get("/api/user/followers")
+def get_followers(
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all followers for the current user
+    """
+    followers = crud.get_user_followers(db, user_id=current_user.id)
+    return followers
+
+@app.post("/api/user/follow/{user_id}", status_code=201)
+def follow_user(
+    user_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Follow another user
+    """
+    if user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot follow yourself")
+
+    target_user = crud.get_user(db, user_id=user_id)
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    follower = crud.follow_user(db, follower_id=current_user.id, following_id=user_id)
+    return follower
+
+@app.delete("/api/user/unfollow/{user_id}", status_code=204)
+def unfollow_user(
+    user_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Unfollow a user
+    """
+    success = crud.unfollow_user(db, follower_id=current_user.id, following_id=user_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Follow relationship not found")
+
+    return None

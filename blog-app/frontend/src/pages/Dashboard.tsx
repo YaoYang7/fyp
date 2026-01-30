@@ -20,11 +20,9 @@ import {
   Article as ArticleIcon,
   Visibility as VisibilityIcon,
   Comment as CommentIcon,
-  People as PeopleIcon,
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  TrendingUp as TrendingUpIcon,
 } from '@mui/icons-material';
 import { useAppSelector } from '../store/hooks';
 import { dashboardApi } from '../services/dashboardAPI';
@@ -38,12 +36,8 @@ const Dashboard: React.FC = () => {
     totalPosts: 0,
     totalViews: 0,
     totalComments: 0,
-    totalFollowers: 0,
   });
   const [recentPosts, setRecentPosts] = useState<BlogPost[]>([]);
-
-  // Toggle this to use real API when backend is ready
-  const USE_MOCK_DATA = true;
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -51,68 +45,14 @@ const Dashboard: React.FC = () => {
         setLoading(true);
         setError('');
 
-        if (USE_MOCK_DATA) {
-          // Mock data for demonstration - remove when backend is ready
-          setTimeout(() => {
-            setStats({
-              totalPosts: 24,
-              totalViews: 1547,
-              totalComments: 89,
-              totalFollowers: 342,
-            });
+        const [statsData, postsData] = await Promise.all([
+          dashboardApi.getStats(),
+          dashboardApi.getRecentPosts(5),
+        ]);
 
-            setRecentPosts([
-              {
-                id: 1,
-                title: 'Getting Started with React and TypeScript',
-                content: 'Full content of the blog post...',
-                excerpt: 'Learn how to build modern web applications using React and TypeScript...',
-                author: user?.username || 'You',
-                author_id: user?.id || 1,
-                date: '2026-01-28',
-                views: 234,
-                comments: 12,
-                status: 'published',
-              },
-              {
-                id: 2,
-                title: 'Building Multi-Tenant Applications',
-                content: 'Full content of the blog post...',
-                excerpt: 'A comprehensive guide to designing and implementing multi-tenant architectures...',
-                author: user?.username || 'You',
-                author_id: user?.id || 1,
-                date: '2026-01-25',
-                views: 189,
-                comments: 8,
-                status: 'published',
-              },
-              {
-                id: 3,
-                title: 'Understanding Redux State Management',
-                content: 'Full content of the blog post...',
-                excerpt: 'Deep dive into Redux Toolkit and best practices for state management...',
-                author: user?.username || 'You',
-                author_id: user?.id || 1,
-                date: '2026-01-22',
-                views: 156,
-                comments: 15,
-                status: 'draft',
-              },
-            ]);
-
-            setLoading(false);
-          }, 1000);
-        } else {
-          // Real API calls - uncomment when backend endpoints are ready
-          const [statsData, postsData] = await Promise.all([
-            dashboardApi.getStats(),
-            dashboardApi.getRecentPosts(5),
-          ]);
-
-          setStats(statsData);
-          setRecentPosts(postsData);
-          setLoading(false);
-        }
+        setStats(statsData);
+        setRecentPosts(postsData);
+        setLoading(false);
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
         setError('Failed to load dashboard data. Please try again later.');
@@ -121,7 +61,7 @@ const Dashboard: React.FC = () => {
     };
 
     fetchDashboardData();
-  }, [user, USE_MOCK_DATA]);
+  }, [user]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -152,15 +92,9 @@ const Dashboard: React.FC = () => {
             {title}
           </Typography>
         </Box>
-        <Typography variant="h4" component="div" sx={{ mb: 1 }}>
+        <Typography variant="h4" component="div">
           {value.toLocaleString()}
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <TrendingUpIcon sx={{ fontSize: 16, color: 'success.main', mr: 0.5 }} />
-          <Typography variant="body2" color="success.main">
-            +12% from last month
-          </Typography>
-        </Box>
       </CardContent>
     </Card>
   );
@@ -205,7 +139,7 @@ const Dashboard: React.FC = () => {
           gridTemplateColumns: {
             xs: '1fr',
             sm: 'repeat(2, 1fr)',
-            md: 'repeat(4, 1fr)',
+            md: 'repeat(3, 1fr)',
           },
           gap: 3,
           mb: 4,
@@ -228,12 +162,6 @@ const Dashboard: React.FC = () => {
           value={stats.totalComments}
           icon={<CommentIcon />}
           color="#ed6c02"
-        />
-        <StatCard
-          title="Followers"
-          value={stats.totalFollowers}
-          icon={<PeopleIcon />}
-          color="#9c27b0"
         />
       </Box>
 
@@ -355,14 +283,6 @@ const Dashboard: React.FC = () => {
                 sx={{ textTransform: 'none', justifyContent: 'flex-start' }}
               >
                 View Comments
-              </Button>
-              <Button
-                variant="outlined"
-                fullWidth
-                startIcon={<PeopleIcon />}
-                sx={{ textTransform: 'none', justifyContent: 'flex-start' }}
-              >
-                Manage Followers
               </Button>
             </Box>
           </Paper>

@@ -39,6 +39,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   const handleLogout = () => {
+    // Clear the JWT token from localStorage
+    localStorage.removeItem('authToken');
     dispatch(logout());
     navigate('/home');
   };

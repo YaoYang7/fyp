@@ -43,7 +43,6 @@ export interface DashboardStats {
   totalPosts: number;
   totalViews: number;
   totalComments: number;
-  totalFollowers: number;
 }
 
 export interface CreatePostData {
@@ -107,12 +106,6 @@ export const dashboardApi = {
   // Get comments for a specific post
   getPostComments: async (postId: number): Promise<any[]> => {
     const response = await api.get(`/posts/${postId}/comments`);
-    return response.data;
-  },
-
-  // Get followers for the logged-in user
-  getFollowers: async (): Promise<any[]> => {
-    const response = await api.get('/user/followers');
     return response.data;
   },
 
