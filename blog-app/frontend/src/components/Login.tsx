@@ -82,6 +82,7 @@ const Login: React.FC<LoginProps> = (props) => {
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           disabled={loading}
+          autoComplete="off"
         />
 
         <TextField
@@ -93,6 +94,7 @@ const Login: React.FC<LoginProps> = (props) => {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           disabled={loading}
+          autoComplete="current-password"
           slotProps={{
             input: {
               endAdornment: (

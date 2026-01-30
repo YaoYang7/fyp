@@ -153,6 +153,7 @@ export default function Register(props: RegisterProps) {
           margin="normal"
           error={!!errors.username}
           helperText={errors.username}
+          autoComplete="off"
         />
 
         <TextField
@@ -165,6 +166,7 @@ export default function Register(props: RegisterProps) {
           margin="normal"
           error={!!errors.email}
           helperText={errors.email}
+          autoComplete="off"
         />
 
         <TextField
@@ -177,6 +179,7 @@ export default function Register(props: RegisterProps) {
           margin="normal"
           error={!!errors.password}
           helperText={errors.password}
+          autoComplete="new-password"
           slotProps={{
             input: {
               endAdornment: (
@@ -202,6 +205,7 @@ export default function Register(props: RegisterProps) {
           margin="normal"
           error={!!errors.confirmPassword}
           helperText={errors.confirmPassword}
+          autoComplete="new-password"
           slotProps={{
             input: {
               endAdornment: (
