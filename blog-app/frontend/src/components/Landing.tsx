@@ -20,19 +20,19 @@ const LandingComponent: React.FC<LandingProps> = (props) => {
 
     const features = [
         {
-            icon: <CreateIcon sx={{ fontSize: 48, color: "primary.main" }} />,
+            icon: <CreateIcon sx={{ fontSize: 56, color: "primary.main" }} />,
             title: "Create & Publish",
             description:
                 "Write and publish your blog posts with an intuitive editor. Share your thoughts with the world in minutes."
         },
         {
-            icon: <PeopleIcon sx={{ fontSize: 48, color: "primary.main" }} />,
+            icon: <PeopleIcon sx={{ fontSize: 56, color: "primary.main" }} />,
             title: "Multi-Tenant",
             description:
                 "Each user gets their own space. Manage multiple blogs from a single platform with complete isolation."
         },
         {
-            icon: <DashboardIcon sx={{ fontSize: 48, color: "primary.main" }} />,
+            icon: <DashboardIcon sx={{ fontSize: 56, color: "primary.main" }} />,
             title: "Easy Management",
             description:
                 "Powerful dashboard to manage your content, track engagement, and grow your audience effortlessly."
@@ -140,17 +140,18 @@ const LandingComponent: React.FC<LandingProps> = (props) => {
                             sx={{
                                 textAlign: "center",
                                 transition: "transform 0.2s",
+                                minHeight: 280,
                                 "&:hover": {
                                     transform: "translateY(-8px)",
                                     boxShadow: 4
                                 }
                             }}
                         >
-                            <CardContent sx={{ p: 4 }}>
-                                <Box sx={{ mb: 2 }}>{feature.icon}</Box>
+                            <CardContent sx={{ p: 5 }}>
+                                <Box sx={{ mb: 3 }}>{feature.icon}</Box>
 
                                 <Typography
-                                    variant="h6"
+                                    variant="h5"
                                     gutterBottom
                                     sx={{ fontWeight: 600 }}
                                 >
@@ -158,7 +159,7 @@ const LandingComponent: React.FC<LandingProps> = (props) => {
                                 </Typography>
 
                                 <Typography
-                                    variant="body2"
+                                    variant="body1"
                                     color="text.secondary"
                                 >
                                     {feature.description}

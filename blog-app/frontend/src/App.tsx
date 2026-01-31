@@ -5,6 +5,7 @@ import SidePanelLayout from "./components/SidePanelLayout";
 import { ProtectedRoute, GuestRoute } from "./components/RouteSettings";
 import HomePage from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
+import AccountInfoPage from "./pages/AccountInfoPage";
 
 function App() {
   return (
@@ -26,6 +27,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/account_info"
+              element={
+                <ProtectedRoute>
+                  <AccountInfoPage />
                 </ProtectedRoute>
               }
             />
