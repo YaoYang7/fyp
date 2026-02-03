@@ -34,7 +34,6 @@ const AccountInfoPage: React.FC = () => {
   return (
     <Box sx={{ maxWidth: 600, mx: 'auto', mt: 2 }}>
       <Paper sx={{ p: 4 }}>
-        {/* Profile Header */}
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 4 }}>
           <Avatar sx={{ width: 100, height: 100, mb: 2, bgcolor: 'primary.main', fontSize: 40 }}>
             <PersonIcon sx={{ fontSize: 60 }} />
@@ -49,7 +48,6 @@ const AccountInfoPage: React.FC = () => {
 
         <Divider sx={{ mb: 3 }} />
 
-        {/* Account Details */}
         <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
           Account Details
         </Typography>
