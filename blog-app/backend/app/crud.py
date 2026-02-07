@@ -209,11 +209,6 @@ def get_dashboard_stats(db: Session, user_id: int, tenant_id: int):
         models.BlogPost.tenant_id == tenant_id
     ).scalar()
 
-    total_views = db.query(func.sum(models.BlogPost.views)).filter(
-        models.BlogPost.author_id == user_id,
-        models.BlogPost.tenant_id == tenant_id
-    ).scalar() or 0
-
     total_comments = db.query(func.count(models.Comment.id)).join(
         models.BlogPost
     ).filter(
@@ -223,6 +218,5 @@ def get_dashboard_stats(db: Session, user_id: int, tenant_id: int):
 
     return {
         "totalPosts": total_posts,
-        "totalViews": total_views,
         "totalComments": total_comments,
     }

@@ -41,7 +41,6 @@ export interface BlogPost {
 
 export interface DashboardStats {
   totalPosts: number;
-  totalViews: number;
   totalComments: number;
 }
 

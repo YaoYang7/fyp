@@ -110,5 +110,4 @@ class Comment(CommentBase):
 # Dashboard Schemas
 class DashboardStats(BaseModel):
     totalPosts: int
-    totalViews: int
     totalComments: int

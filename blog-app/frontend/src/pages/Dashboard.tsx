@@ -18,7 +18,6 @@ import {
 } from '@mui/material';
 import {
   Article as ArticleIcon,
-  Visibility as VisibilityIcon,
   Comment as CommentIcon,
   Add as AddIcon,
   Edit as EditIcon,
@@ -36,7 +35,6 @@ const Dashboard: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [stats, setStats] = useState<DashboardStats>({
     totalPosts: 0,
-    totalViews: 0,
     totalComments: 0,
   });
   const [recentPosts, setRecentPosts] = useState<BlogPost[]>([]);
@@ -139,7 +137,7 @@ const Dashboard: React.FC = () => {
           gridTemplateColumns: {
             xs: '1fr',
             sm: 'repeat(2, 1fr)',
-            md: 'repeat(3, 1fr)',
+            md: 'repeat(2, 1fr)',
           },
           gap: 3,
           mb: 4,
@@ -150,12 +148,6 @@ const Dashboard: React.FC = () => {
           value={stats.totalPosts}
           icon={<ArticleIcon />}
           color="#1976d2"
-        />
-        <StatCard
-          title="Total Views"
-          value={stats.totalViews}
-          icon={<VisibilityIcon />}
-          color="#2e7d32"
         />
         <StatCard
           title="Comments"
