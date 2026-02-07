@@ -38,8 +38,7 @@ class User(Base):
     tenant = relationship("Tenant", back_populates="users")
     posts = relationship("BlogPost", back_populates="author", cascade="all, delete-orphan")
     comments = relationship("Comment", back_populates="author", cascade="all, delete-orphan")
-    followers = relationship("Follower", foreign_keys="Follower.following_id", back_populates="following", cascade="all, delete-orphan")
-    following = relationship("Follower", foreign_keys="Follower.follower_id", back_populates="follower", cascade="all, delete-orphan")
+
 
 
 class PostStatus(str, enum.Enum):
@@ -82,17 +81,3 @@ class Comment(Base):
     tenant = relationship("Tenant", back_populates="comments")
     author = relationship("User", back_populates="comments")
     post = relationship("BlogPost", back_populates="comments")
-
-
-class Follower(Base):
-    __tablename__ = "followers"
-
-    id = Column(Integer, primary_key=True, index=True)
-    follower_id = Column(Integer, ForeignKey("users.id"), nullable=False)  # User who is following
-    following_id = Column(Integer, ForeignKey("users.id"), nullable=False)  # User being followed
-    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-
-    # Relationships
-    follower = relationship("User", foreign_keys=[follower_id], back_populates="following")
-    following = relationship("User", foreign_keys=[following_id], back_populates="followers")

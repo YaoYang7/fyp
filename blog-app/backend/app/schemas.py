@@ -107,25 +107,8 @@ class Comment(CommentBase):
     class Config:
         from_attributes = True
 
-# Follower Schemas
-class FollowerBase(BaseModel):
-    following_id: int
-
-class FollowerCreate(FollowerBase):
-    pass
-
-class Follower(BaseModel):
-    id: int
-    follower_id: int
-    following_id: int
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
-
 # Dashboard Schemas
 class DashboardStats(BaseModel):
     totalPosts: int
     totalViews: int
     totalComments: int
-    totalFollowers: int

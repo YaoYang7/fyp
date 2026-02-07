@@ -202,55 +202,6 @@ def delete_comment(db: Session, comment_id: int, tenant_id: int):
     return True
 
 
-# Follower CRUD Operations
-def follow_user(db: Session, follower_id: int, following_id: int, tenant_id: int):
-    # Check if already following
-    existing = db.query(models.Follower).filter(
-        models.Follower.follower_id == follower_id,
-        models.Follower.following_id == following_id,
-        models.Follower.tenant_id == tenant_id
-    ).first()
-
-    if existing:
-        return existing
-
-    db_follower = models.Follower(
-        follower_id=follower_id,
-        following_id=following_id,
-        tenant_id=tenant_id
-    )
-    db.add(db_follower)
-    db.commit()
-    db.refresh(db_follower)
-    return db_follower
-
-def unfollow_user(db: Session, follower_id: int, following_id: int, tenant_id: int):
-    db_follower = db.query(models.Follower).filter(
-        models.Follower.follower_id == follower_id,
-        models.Follower.following_id == following_id,
-        models.Follower.tenant_id == tenant_id
-    ).first()
-
-    if not db_follower:
-        return False
-
-    db.delete(db_follower)
-    db.commit()
-    return True
-
-def get_user_followers(db: Session, user_id: int, tenant_id: int):
-    return db.query(models.Follower).filter(
-        models.Follower.following_id == user_id,
-        models.Follower.tenant_id == tenant_id
-    ).all()
-
-def get_user_following(db: Session, user_id: int, tenant_id: int):
-    return db.query(models.Follower).filter(
-        models.Follower.follower_id == user_id,
-        models.Follower.tenant_id == tenant_id
-    ).all()
-
-
 # Dashboard Statistics
 def get_dashboard_stats(db: Session, user_id: int, tenant_id: int):
     total_posts = db.query(func.count(models.BlogPost.id)).filter(
@@ -270,14 +221,8 @@ def get_dashboard_stats(db: Session, user_id: int, tenant_id: int):
         models.BlogPost.tenant_id == tenant_id
     ).scalar()
 
-    total_followers = db.query(func.count(models.Follower.id)).filter(
-        models.Follower.following_id == user_id,
-        models.Follower.tenant_id == tenant_id
-    ).scalar()
-
     return {
         "totalPosts": total_posts,
         "totalViews": total_views,
         "totalComments": total_comments,
-        "totalFollowers": total_followers
     }
