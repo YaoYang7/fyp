@@ -44,7 +44,7 @@ export default function Register(props: RegisterProps) {
     const newErrors: Partial<FormData> = {};
 
     if (!formData.tenantName.trim()) {
-      newErrors.tenantName = 'Organization name is required';
+      newErrors.tenantName = 'Organisation name is required';
     }
 
     if (!formData.username.trim()) {
@@ -158,7 +158,7 @@ export default function Register(props: RegisterProps) {
         )}
 
         <TextField
-          label="Organization Name"
+          label="Organisation Name"
           name="tenantName"
           value={formData.tenantName}
           onChange={handleChange}

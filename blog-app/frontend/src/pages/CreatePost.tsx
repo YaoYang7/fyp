@@ -108,7 +108,6 @@ const CreatePost: React.FC = () => {
           >
             <MenuItem value="draft">Draft</MenuItem>
             <MenuItem value="published">Published</MenuItem>
-            <MenuItem value="scheduled">Scheduled</MenuItem>
           </TextField>
 
           <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>

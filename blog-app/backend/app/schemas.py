@@ -61,7 +61,6 @@ class LoginResponse(BaseModel):
 class PostStatus(str, Enum):
     published = "published"
     draft = "draft"
-    scheduled = "scheduled"
 
 class BlogPostBase(BaseModel):
     title: str

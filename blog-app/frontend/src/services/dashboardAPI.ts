@@ -34,7 +34,7 @@ export interface BlogPost {
   date: string;
   views: number;
   comments: number;
-  status: 'published' | 'draft' | 'scheduled';
+  status: 'published' | 'draft';
   created_at?: string;
   updated_at?: string;
 }
@@ -49,14 +49,14 @@ export interface CreatePostData {
   title: string;
   content: string;
   excerpt?: string;
-  status: 'published' | 'draft' | 'scheduled';
+  status: 'published' | 'draft';
 }
 
 export interface UpdatePostData {
   title?: string;
   content?: string;
   excerpt?: string;
-  status?: 'published' | 'draft' | 'scheduled';
+  status?: 'published' | 'draft';
 }
 
 export const dashboardApi = {

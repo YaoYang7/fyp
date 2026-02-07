@@ -71,8 +71,6 @@ const Dashboard: React.FC = () => {
         return 'success';
       case 'draft':
         return 'warning';
-      case 'scheduled':
-        return 'info';
       default:
         return 'default';
     }

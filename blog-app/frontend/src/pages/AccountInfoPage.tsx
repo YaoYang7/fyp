@@ -80,7 +80,7 @@ const AccountInfoPage: React.FC = () => {
                 <BusinessIcon color="primary" />
               </ListItemIcon>
               <ListItemText
-                primary="Organization"
+                primary="Organisation"
                 secondary={user.tenant_name}
               />
             </ListItem>
@@ -91,7 +91,7 @@ const AccountInfoPage: React.FC = () => {
               <BusinessIcon color="primary" />
             </ListItemIcon>
             <ListItemText
-              primary="Organization ID"
+              primary="Organisation ID"
               secondary={user.tenant_id}
             />
           </ListItem>

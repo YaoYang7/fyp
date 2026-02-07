@@ -45,7 +45,6 @@ class User(Base):
 class PostStatus(str, enum.Enum):
     published = "published"
     draft = "draft"
-    scheduled = "scheduled"
 
 
 class BlogPost(Base):
