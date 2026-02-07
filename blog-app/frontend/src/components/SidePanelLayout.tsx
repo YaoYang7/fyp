@@ -22,7 +22,7 @@ const drawerWidth = 240;
 const navigationItems = [
   { label: 'Home', path: '/home', requiresAuth: false },
   { label: 'Dashboard', path: '/dashboard', requiresAuth: true },
-  { label: 'Feed', path: '/feed', requiresAuth: true },
+  { label: 'Group Posts', path: '/feed', requiresAuth: true },
   { label: 'Account Info', path: '/account_info', requiresAuth: true },
   { label: 'Register', path: '/home?view=register', requiresAuth: false, authOnly: false },
   { label: 'Login', path: '/home?view=login', requiresAuth: false, authOnly: false },
@@ -71,7 +71,7 @@ const SidePanelLayout: React.FC<SidePanelLayoutProps> = ({ children }) => {
               : location.pathname === '/create_post'
                 ? 'Create Post'
                 : location.pathname === '/feed'
-                  ? 'Feed'
+                  ? 'Group Posts'
                   : location.pathname === '/account_info'
                   ? 'Account Info'
                   : location.search === '?view=login'

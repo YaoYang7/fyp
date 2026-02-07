@@ -26,6 +26,7 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
     tenant_name: str
+    mode: str = "create"  # "create" or "join"
 
 class UserUpdate(BaseModel):
     username: Optional[str] = None

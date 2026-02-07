@@ -24,6 +24,7 @@ export interface RegisterUser {
   email: string;
   password: string;
   tenant_name: string;
+  mode: 'create' | 'join';
 }
 
 export const userApi = {

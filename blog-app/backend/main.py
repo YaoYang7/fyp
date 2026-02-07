@@ -32,20 +32,27 @@ def register_user_endpoint(user: schemas.UserCreate, db: Session = Depends(get_d
     """
     Register a new user account and create/join a tenant
     """
-    # Find or create tenant to check uniqueness within it
     tenant = crud.get_tenant_by_name(db, user.tenant_name)
-    tenant_id = tenant.id if tenant else None
 
-    # Check if username already exists within the tenant
-    if tenant_id is not None:
-        db_user = crud.get_user_by_username(db, username=user.username, tenant_id=tenant_id)
-        if db_user:
-            raise HTTPException(status_code=400, detail="Username already registered in this organization")
+    # Enforce create vs join mode
+    if user.mode == "create":
+        if tenant:
+            raise HTTPException(status_code=400, detail="Group name already exists. Use 'Join' to join an existing group.")
+    elif user.mode == "join":
+        if not tenant:
+            raise HTTPException(status_code=400, detail="Group not found. Check the name or use 'Create' to make a new group.")
+    else:
+        raise HTTPException(status_code=400, detail="Invalid mode. Use 'create' or 'join'.")
 
-        # Check if email already exists within the tenant
-        db_user = crud.get_user_by_email(db, email=user.email, tenant_id=tenant_id)
+    # Check uniqueness within the tenant (only relevant when joining)
+    if tenant:
+        db_user = crud.get_user_by_username(db, username=user.username, tenant_id=tenant.id)
         if db_user:
-            raise HTTPException(status_code=400, detail="Email already registered in this organization")
+            raise HTTPException(status_code=400, detail="Username already registered in this group")
+
+        db_user = crud.get_user_by_email(db, email=user.email, tenant_id=tenant.id)
+        if db_user:
+            raise HTTPException(status_code=400, detail="Email already registered in this group")
 
     # Create the new user (and tenant if needed)
     return crud.register_user(db=db, user=user)

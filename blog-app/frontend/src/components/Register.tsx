@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Button, TextField, Typography, Paper, Link, Alert, CircularProgress } from '@mui/material';
+import { Box, Button, TextField, Typography, Paper, Link, Alert, CircularProgress, ToggleButtonGroup, ToggleButton } from '@mui/material';
 import IconButton from "@mui/material/IconButton";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
@@ -29,6 +29,7 @@ export default function Register(props: RegisterProps) {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [mode, setMode] = useState<'create' | 'join'>('create');
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState<string>('');
 
@@ -44,7 +45,7 @@ export default function Register(props: RegisterProps) {
     const newErrors: Partial<FormData> = {};
 
     if (!formData.tenantName.trim()) {
-      newErrors.tenantName = 'Organisation name is required';
+      newErrors.tenantName = 'Group name is required';
     }
 
     if (!formData.username.trim()) {
@@ -81,7 +82,8 @@ export default function Register(props: RegisterProps) {
           username: formData.username,
           email: formData.email,
           password: formData.password,
-          tenant_name: formData.tenantName
+          tenant_name: formData.tenantName,
+          mode: mode
         });
 
         setIsSubmitted(true);
@@ -151,6 +153,24 @@ export default function Register(props: RegisterProps) {
           Create an account to get started
         </Typography>
 
+        <ToggleButtonGroup
+          value={mode}
+          exclusive
+          onChange={(_, newMode) => {
+            if (newMode !== null) {
+              setMode(newMode);
+              setFormData(prev => ({ ...prev, tenantName: '' }));
+              setErrors(prev => ({ ...prev, tenantName: '' }));
+              setApiError('');
+            }
+          }}
+          fullWidth
+          sx={{ mb: 2 }}
+        >
+          <ToggleButton value="create" sx={{ fontWeight: mode === 'create' ? 'bold' : 'normal' }}>Create Group</ToggleButton>
+          <ToggleButton value="join" sx={{ fontWeight: mode === 'join' ? 'bold' : 'normal' }}>Join Group</ToggleButton>
+        </ToggleButtonGroup>
+
         {apiError && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {apiError}
@@ -158,17 +178,17 @@ export default function Register(props: RegisterProps) {
         )}
 
         <TextField
-          label="Organisation Name"
+          label={mode === 'create' ? 'New Group Name' : 'Existing Group Name'}
           name="tenantName"
           value={formData.tenantName}
           onChange={handleChange}
           onKeyDown={(e) => {if (e.key === ' ') {
               e.preventDefault()
-            }; 
+            };
           }}          fullWidth
           margin="normal"
           error={!!errors.tenantName}
-          helperText={errors.tenantName}
+          helperText={errors.tenantName || (mode === 'join' ? 'Enter the exact name of the group you want to join' : '')}
           autoComplete="off"
         />
 

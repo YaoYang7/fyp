@@ -7,7 +7,7 @@ import HomePage from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import AccountInfoPage from "./pages/AccountInfoPage";
 import CreatePost from "./pages/CreatePost";
-import Feed from "./pages/BlogHomeFeed";
+import GroupBlogFeeds from "./pages/GroupBlogFeeds";
 
 function App() {
   return (
@@ -52,7 +52,7 @@ function App() {
               path="/feed"
               element={
                 <ProtectedRoute>
-                  <Feed />
+                  <GroupBlogFeeds />
                 </ProtectedRoute>
               }
             />
