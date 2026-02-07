@@ -92,7 +92,7 @@ def create_post(db: Session, post: schemas.BlogPostCreate, user_id: int, tenant_
     db_post = models.BlogPost(
         title=post.title,
         content=post.content,
-        excerpt=post.excerpt,
+        summary=post.summary,
         status=post.status,
         author_id=user_id,
         tenant_id=tenant_id

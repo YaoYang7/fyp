@@ -66,7 +66,7 @@ class PostStatus(str, Enum):
 class BlogPostBase(BaseModel):
     title: str
     content: str
-    excerpt: Optional[str] = None
+    summary: Optional[str] = None
     status: PostStatus = PostStatus.draft
 
 class BlogPostCreate(BlogPostBase):
@@ -75,7 +75,7 @@ class BlogPostCreate(BlogPostBase):
 class BlogPostUpdate(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
-    excerpt: Optional[str] = None
+    summary: Optional[str] = None
     status: Optional[PostStatus] = None
 
 class BlogPost(BlogPostBase):

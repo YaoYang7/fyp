@@ -28,7 +28,7 @@ export interface BlogPost {
   id: number;
   title: string;
   content: string;
-  excerpt: string;
+  summary: string;
   author: string;
   author_id: number;
   date: string;
@@ -47,14 +47,14 @@ export interface DashboardStats {
 export interface CreatePostData {
   title: string;
   content: string;
-  excerpt?: string;
+  summary?: string;
   status: 'published' | 'draft';
 }
 
 export interface UpdatePostData {
   title?: string;
   content?: string;
-  excerpt?: string;
+  summary?: string;
   status?: 'published' | 'draft';
 }
 

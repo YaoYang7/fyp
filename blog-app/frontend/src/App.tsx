@@ -7,6 +7,8 @@ import HomePage from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import AccountInfoPage from "./pages/AccountInfoPage";
 import CreatePost from "./pages/CreatePost";
+import ManageBlog from "./pages/ManageBlog";
+import EditPost from "./pages/EditPost";
 import GroupBlogFeeds from "./pages/GroupBlogFeeds";
 
 function App() {
@@ -45,6 +47,22 @@ function App() {
               element={
                 <ProtectedRoute>
                   <CreatePost />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/manage_blog"
+              element={
+                <ProtectedRoute>
+                  <ManageBlog />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/edit_post/:id"
+              element={
+                <ProtectedRoute>
+                  <EditPost />
                 </ProtectedRoute>
               }
             />

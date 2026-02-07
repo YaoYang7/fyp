@@ -52,7 +52,7 @@ class BlogPost(Base):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(255), nullable=False)
     content = Column(Text, nullable=False)
-    excerpt = Column(Text)
+    summary = Column(Text)
     author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
     views = Column(Integer, default=0)

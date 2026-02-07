@@ -15,6 +15,11 @@ import {
   IconButton,
   CircularProgress,
   Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
 import {
   Article as ArticleIcon,
@@ -38,6 +43,8 @@ const Dashboard: React.FC = () => {
     totalComments: 0,
   });
   const [recentPosts, setRecentPosts] = useState<BlogPost[]>([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [postToDelete, setPostToDelete] = useState<BlogPost | null>(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -62,6 +69,26 @@ const Dashboard: React.FC = () => {
 
     fetchDashboardData();
   }, [user]);
+
+  const handleDeleteClick = (post: BlogPost) => {
+    setPostToDelete(post);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!postToDelete) return;
+    try {
+      await dashboardApi.deletePost(postToDelete.id);
+      setRecentPosts((prev) => prev.filter((p) => p.id !== postToDelete.id));
+      setStats((prev) => ({ ...prev, totalPosts: prev.totalPosts - 1 }));
+      setDeleteDialogOpen(false);
+      setPostToDelete(null);
+    } catch (err) {
+      console.error('Error deleting post:', err);
+      setError('Failed to delete post.');
+      setDeleteDialogOpen(false);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -182,10 +209,10 @@ const Dashboard: React.FC = () => {
               }}
               secondaryAction={
                 <Box>
-                  <IconButton edge="end" aria-label="edit" sx={{ mr: 1 }}>
+                  <IconButton edge="end" aria-label="edit" sx={{ mr: 1 }} onClick={() => navigate(`/edit_post/${post.id}`)}>
                     <EditIcon />
                   </IconButton>
-                  <IconButton edge="end" aria-label="delete">
+                  <IconButton edge="end" aria-label="delete" onClick={() => handleDeleteClick(post)}>
                     <DeleteIcon />
                   </IconButton>
                 </Box>
@@ -210,7 +237,7 @@ const Dashboard: React.FC = () => {
                 secondary={
                   <Box sx={{ mt: 1 }}>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                      {post.excerpt}
+                      {post.summary}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       {post.date}
@@ -222,6 +249,22 @@ const Dashboard: React.FC = () => {
           ))}
         </List>
       </Paper>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>Delete Post</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete "{postToDelete?.title}"? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

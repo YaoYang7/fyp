@@ -22,6 +22,8 @@ const drawerWidth = 240;
 const navigationItems = [
   { label: 'Home', path: '/home', requiresAuth: false },
   { label: 'Dashboard', path: '/dashboard', requiresAuth: true },
+  { label: 'Create New Post', path: '/create_post', requiresAuth: true },
+  { label: 'Manage Posts', path: '/manage_blog', requiresAuth: true },
   { label: 'Group Posts', path: '/feed', requiresAuth: true },
   { label: 'Account Info', path: '/account_info', requiresAuth: true },
   { label: 'Register', path: '/home?view=register', requiresAuth: false, authOnly: false },
@@ -57,6 +59,11 @@ const SidePanelLayout: React.FC<SidePanelLayoutProps> = ({ children }) => {
       return currentPath === path;
     }
 
+    // Highlight Manage Posts when editing a post
+    if (path === '/manage_blog' && location.pathname.startsWith('/edit_post')) {
+      return true;
+    }
+
     // For paths without query params, ensure current URL also has no query params
     return currentPath === path && !location.search;
   };
@@ -70,15 +77,19 @@ const SidePanelLayout: React.FC<SidePanelLayoutProps> = ({ children }) => {
               ? 'Dashboard'
               : location.pathname === '/create_post'
                 ? 'Create Post'
-                : location.pathname === '/feed'
-                  ? 'Group Posts'
-                  : location.pathname === '/account_info'
-                  ? 'Account Info'
-                  : location.search === '?view=login'
-                    ? 'Login'
-                    : location.search === '?view=register'
-                      ? 'Register'
-                      : 'Blog Application / Platform'}
+                : location.pathname === '/manage_blog'
+                  ? 'Manage Posts'
+                  : location.pathname.startsWith('/edit_post')
+                    ? 'Edit Post'
+                    : location.pathname === '/feed'
+                      ? 'Group Posts'
+                      : location.pathname === '/account_info'
+                      ? 'Account Info'
+                      : location.search === '?view=login'
+                        ? 'Login'
+                        : location.search === '?view=register'
+                          ? 'Register'
+                          : 'Blog Application / Platform'}
           </Typography>
         </Toolbar>
       </AppBar>

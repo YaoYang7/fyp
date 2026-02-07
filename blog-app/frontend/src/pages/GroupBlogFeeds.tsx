@@ -64,15 +64,6 @@ const GroupBlogFeeds: React.FC = () => {
         </Alert>
       )}
 
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Group Posts
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Latest published posts from your group.
-        </Typography>
-      </Box>
-
       <Paper sx={{ p: 3 }}>
         {posts.length === 0 ? (
           <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
@@ -107,7 +98,7 @@ const GroupBlogFeeds: React.FC = () => {
                   secondary={
                     <Box sx={{ mt: 1 }}>
                       <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                        {post.excerpt}
+                        {post.summary}
                       </Typography>
                       <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                         <Typography variant="caption" color="text.secondary">

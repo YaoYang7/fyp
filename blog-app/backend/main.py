@@ -100,7 +100,7 @@ def format_blog_post(post: models.BlogPost, db: Session) -> dict:
         "id": post.id,
         "title": post.title,
         "content": post.content,
-        "excerpt": post.excerpt,
+        "summary": post.summary,
         "author": post.author.username,
         "author_id": post.author_id,
         "date": post.created_at.strftime("%Y-%m-%d"),
