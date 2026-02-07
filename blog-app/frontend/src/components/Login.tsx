@@ -92,6 +92,10 @@ const Login: React.FC<LoginProps> = (props) => {
           margin="normal"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
+          onKeyDown={(e) => {if (e.key === ' ') {
+              e.preventDefault()
+            }; 
+          }}
           disabled={loading}
           autoComplete="off"
         />

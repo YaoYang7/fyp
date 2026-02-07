@@ -25,7 +25,10 @@ def create_tenant(db: Session, name: str) -> models.Tenant:
     return db_tenant
 
 def get_tenant_by_name(db: Session, name: str) -> Optional[models.Tenant]:
-    return db.query(models.Tenant).filter(models.Tenant.name == name).first()
+    slug = _slugify(name)
+    return db.query(models.Tenant).filter(
+        or_(models.Tenant.name == name, models.Tenant.slug == slug)
+    ).first()
 
 
 # User CRUD Operations

@@ -162,7 +162,10 @@ export default function Register(props: RegisterProps) {
           name="tenantName"
           value={formData.tenantName}
           onChange={handleChange}
-          fullWidth
+          onKeyDown={(e) => {if (e.key === ' ') {
+              e.preventDefault()
+            }; 
+          }}          fullWidth
           margin="normal"
           error={!!errors.tenantName}
           helperText={errors.tenantName}
@@ -174,7 +177,10 @@ export default function Register(props: RegisterProps) {
           name="username"
           value={formData.username}
           onChange={handleChange}
-          fullWidth
+          onKeyDown={(e) => {if (e.key === ' ') {
+              e.preventDefault()
+            }; 
+          }}          fullWidth
           margin="normal"
           error={!!errors.username}
           helperText={errors.username}
@@ -187,6 +193,10 @@ export default function Register(props: RegisterProps) {
           type="email"
           value={formData.email}
           onChange={handleChange}
+                    onKeyDown={(e) => {if (e.key === ' ') {
+              e.preventDefault()
+            }; 
+          }}
           fullWidth
           margin="normal"
           error={!!errors.email}
