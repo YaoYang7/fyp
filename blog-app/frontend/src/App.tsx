@@ -6,6 +6,8 @@ import { ProtectedRoute, GuestRoute } from "./components/RouteSettings";
 import HomePage from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import AccountInfoPage from "./pages/AccountInfoPage";
+import CreatePost from "./pages/CreatePost";
+import Feed from "./pages/BlogHomeFeed";
 
 function App() {
   return (
@@ -35,6 +37,22 @@ function App() {
               element={
                 <ProtectedRoute>
                   <AccountInfoPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/create_post"
+              element={
+                <ProtectedRoute>
+                  <CreatePost />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/feed"
+              element={
+                <ProtectedRoute>
+                  <Feed />
                 </ProtectedRoute>
               }
             />

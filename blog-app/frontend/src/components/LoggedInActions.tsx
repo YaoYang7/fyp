@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   List,
@@ -20,13 +21,15 @@ interface LoggedInActionsProps {
 }
 
 const LoggedInActions: React.FC<LoggedInActionsProps> = ({ onLogout }) => {
+  const navigate = useNavigate();
+
   return (
     <>
       <Divider sx={{ my: 2 }} />
       <Box sx={{ px: 2 }}>
         <List dense>
           <ListItem disablePadding>
-            <ListItemButton sx={{ borderRadius: 1 }}>
+            <ListItemButton sx={{ borderRadius: 1 }} onClick={() => navigate('/create_post')}>
               <ListItemIcon sx={{ minWidth: 36 }}>
                 <AddIcon fontSize="small" />
               </ListItemIcon>

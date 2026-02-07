@@ -24,11 +24,13 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../store/hooks';
 import { dashboardApi } from '../services/dashboardAPI';
 import type { BlogPost, DashboardStats } from '../services/dashboardAPI';
 
 const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
@@ -175,6 +177,7 @@ const Dashboard: React.FC = () => {
             variant="contained"
             startIcon={<AddIcon />}
             sx={{ textTransform: 'none' }}
+            onClick={() => navigate('/create_post')}
           >
             New Post
           </Button>
@@ -219,19 +222,9 @@ const Dashboard: React.FC = () => {
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                       {post.excerpt}
                     </Typography>
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                      <Typography variant="caption" color="text.secondary">
-                        {post.date}
-                      </Typography>
-                      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                        <VisibilityIcon sx={{ fontSize: 14 }} />
-                        <Typography variant="caption">{post.views}</Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                        <CommentIcon sx={{ fontSize: 14 }} />
-                        <Typography variant="caption">{post.comments}</Typography>
-                      </Box>
-                    </Box>
+                    <Typography variant="caption" color="text.secondary">
+                      {post.date}
+                    </Typography>
                   </Box>
                 }
               />

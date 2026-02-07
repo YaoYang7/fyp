@@ -66,6 +66,14 @@ export const dashboardApi = {
     return response.data;
   },
 
+  // Get all published posts in the tenant (feed)
+  getFeedPosts: async (limit: number = 50): Promise<BlogPost[]> => {
+    const response = await api.get('/posts/feed', {
+      params: { limit },
+    });
+    return response.data;
+  },
+
   // Get recent posts for the logged-in user
   getRecentPosts: async (limit: number = 10): Promise<BlogPost[]> => {
     const response = await api.get('/posts/recent', {

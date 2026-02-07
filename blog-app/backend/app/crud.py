@@ -105,6 +105,12 @@ def get_post(db: Session, post_id: int, tenant_id: int):
         models.BlogPost.tenant_id == tenant_id
     ).first()
 
+def get_tenant_posts(db: Session, tenant_id: int, skip: int = 0, limit: int = 100):
+    return db.query(models.BlogPost).filter(
+        models.BlogPost.tenant_id == tenant_id,
+        models.BlogPost.status == models.PostStatus.published
+    ).order_by(desc(models.BlogPost.created_at)).offset(skip).limit(limit).all()
+
 def get_user_posts(db: Session, user_id: int, tenant_id: int, skip: int = 0, limit: int = 100):
     return db.query(models.BlogPost).filter(
         models.BlogPost.author_id == user_id,

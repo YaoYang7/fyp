@@ -22,6 +22,7 @@ const drawerWidth = 240;
 const navigationItems = [
   { label: 'Home', path: '/home', requiresAuth: false },
   { label: 'Dashboard', path: '/dashboard', requiresAuth: true },
+  { label: 'Feed', path: '/feed', requiresAuth: true },
   { label: 'Account Info', path: '/account_info', requiresAuth: true },
   { label: 'Register', path: '/home?view=register', requiresAuth: false, authOnly: false },
   { label: 'Login', path: '/home?view=login', requiresAuth: false, authOnly: false },
@@ -67,13 +68,17 @@ const SidePanelLayout: React.FC<SidePanelLayoutProps> = ({ children }) => {
           <Typography variant="h6" sx={{ flexGrow: 1, textAlign: 'center' }}>
             {location.pathname === '/dashboard'
               ? 'Dashboard'
-              : location.pathname === '/account_info'
-                ? 'Account Info'
-                : location.search === '?view=login'
-                  ? 'Login'
-                  : location.search === '?view=register'
-                    ? 'Register'
-                    : 'Blog Application / Platform'}
+              : location.pathname === '/create_post'
+                ? 'Create Post'
+                : location.pathname === '/feed'
+                  ? 'Feed'
+                  : location.pathname === '/account_info'
+                  ? 'Account Info'
+                  : location.search === '?view=login'
+                    ? 'Login'
+                    : location.search === '?view=register'
+                      ? 'Register'
+                      : 'Blog Application / Platform'}
           </Typography>
         </Toolbar>
       </AppBar>

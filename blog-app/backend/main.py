@@ -103,6 +103,19 @@ def get_dashboard_stats(
     return stats
 
 # Blog Post Endpoints
+@app.get("/api/posts/feed")
+def get_feed_posts(
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=100),
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all published posts in the current user's tenant (feed)
+    """
+    posts = crud.get_tenant_posts(db, tenant_id=current_user.tenant_id, skip=skip, limit=limit)
+    return [format_blog_post(post, db) for post in posts]
+
 @app.get("/api/posts/recent")
 def get_recent_posts(
     limit: int = Query(default=10, ge=1, le=100),
