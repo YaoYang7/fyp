@@ -15,6 +15,7 @@ import {
   Email as EmailIcon,
   CalendarToday as CalendarIcon,
   Badge as BadgeIcon,
+  Business as BusinessIcon,
 } from '@mui/icons-material';
 import { useAppSelector } from '../store/hooks';
 
@@ -70,6 +71,28 @@ const AccountInfoPage: React.FC = () => {
             <ListItemText
               primary="Email"
               secondary={user.email}
+            />
+          </ListItem>
+
+          {user.tenant_name && (
+            <ListItem>
+              <ListItemIcon>
+                <BusinessIcon color="primary" />
+              </ListItemIcon>
+              <ListItemText
+                primary="Organization"
+                secondary={user.tenant_name}
+              />
+            </ListItem>
+          )}
+
+          <ListItem>
+            <ListItemIcon>
+              <BusinessIcon color="primary" />
+            </ListItemIcon>
+            <ListItemText
+              primary="Organization ID"
+              secondary={user.tenant_id}
             />
           </ListItem>
 

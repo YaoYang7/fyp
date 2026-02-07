@@ -62,11 +62,25 @@ def login_user_endpoint(user_login: schemas.UserLogin, db: Session = Depends(get
     # Create JWT token with tenant_id
     access_token = create_access_token(data={"sub": str(user.id), "tenant_id": user.tenant_id})
 
-    return schemas.LoginResponse(
-        message="Login successful",
-        user=user,
-        token=access_token
-    )
+    # Query users table to get tenant_id, then query tenants table for the name
+    db_user = db.query(models.User).filter(models.User.id == user.id).first()
+    tenant = db.query(models.Tenant).filter(models.Tenant.id == db_user.tenant_id).first()
+
+    user_data = {
+        "id": db_user.id,
+        "username": db_user.username,
+        "email": db_user.email,
+        "tenant_id": db_user.tenant_id,
+        "tenant_name": tenant.name if tenant else None,
+        "created_at": db_user.created_at,
+        "updated_at": db_user.updated_at,
+    }
+
+    return {
+        "message": "Login successful",
+        "user": user_data,
+        "token": access_token,
+    }
 
 # Helper function to format blog post for frontend
 def format_blog_post(post: models.BlogPost, db: Session) -> dict:

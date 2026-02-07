@@ -38,6 +38,7 @@ class UserUpdatePassword(BaseModel):
 class User(UserBase):
     id: int
     tenant_id: int
+    tenant_name: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 
