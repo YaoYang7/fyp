@@ -6,6 +6,7 @@ import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import { userApi } from '../services/usersAPI';
 
 interface FormData {
+  tenantName: string;
   username: string;
   email: string;
   password: string;
@@ -18,6 +19,7 @@ interface RegisterProps {
 
 export default function Register(props: RegisterProps) {
   const [formData, setFormData] = useState<FormData>({
+    tenantName: '',
     username: '',
     email: '',
     password: '',
@@ -40,6 +42,10 @@ export default function Register(props: RegisterProps) {
 
   const validate = (): boolean => {
     const newErrors: Partial<FormData> = {};
+
+    if (!formData.tenantName.trim()) {
+      newErrors.tenantName = 'Organization name is required';
+    }
 
     if (!formData.username.trim()) {
       newErrors.username = 'Username is required';
@@ -74,7 +80,8 @@ export default function Register(props: RegisterProps) {
         await userApi.register({
           username: formData.username,
           email: formData.email,
-          password: formData.password
+          password: formData.password,
+          tenant_name: formData.tenantName
         });
 
         setIsSubmitted(true);
@@ -149,6 +156,18 @@ export default function Register(props: RegisterProps) {
             {apiError}
           </Alert>
         )}
+
+        <TextField
+          label="Organization Name"
+          name="tenantName"
+          value={formData.tenantName}
+          onChange={handleChange}
+          fullWidth
+          margin="normal"
+          error={!!errors.tenantName}
+          helperText={errors.tenantName}
+          autoComplete="off"
+        />
 
         <TextField
           label="Username"

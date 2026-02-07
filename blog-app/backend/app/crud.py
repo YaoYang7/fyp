@@ -1,12 +1,36 @@
+import re
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, func, desc
 from . import models, schemas
 from .security import get_password_hash, verify_password
 from typing import Optional, List
 
+
+def _slugify(name: str) -> str:
+    """Convert a tenant name to a URL-friendly slug."""
+    slug = name.lower().strip()
+    slug = re.sub(r'[^\w\s-]', '', slug)
+    slug = re.sub(r'[\s_]+', '-', slug)
+    slug = re.sub(r'-+', '-', slug)
+    return slug
+
+
+# Tenant CRUD Operations
+def create_tenant(db: Session, name: str) -> models.Tenant:
+    slug = _slugify(name)
+    db_tenant = models.Tenant(name=name, slug=slug)
+    db.add(db_tenant)
+    db.commit()
+    db.refresh(db_tenant)
+    return db_tenant
+
+def get_tenant_by_name(db: Session, name: str) -> Optional[models.Tenant]:
+    return db.query(models.Tenant).filter(models.Tenant.name == name).first()
+
+
 # User CRUD Operations
-def get_users(db: Session, skip: int = 0, limit: int = 100, search: Optional[str] = None):
-    query = db.query(models.User)
+def get_users(db: Session, tenant_id: int, skip: int = 0, limit: int = 100, search: Optional[str] = None):
+    query = db.query(models.User).filter(models.User.tenant_id == tenant_id)
 
     if search:
         query = query.filter(
@@ -21,18 +45,30 @@ def get_users(db: Session, skip: int = 0, limit: int = 100, search: Optional[str
 def get_user(db: Session, user_id: int):
     return db.query(models.User).filter(models.User.id == user_id).first()
 
-def get_user_by_email(db: Session, email: str):
-    return db.query(models.User).filter(models.User.email == email).first()
+def get_user_by_email(db: Session, email: str, tenant_id: int):
+    return db.query(models.User).filter(
+        models.User.email == email,
+        models.User.tenant_id == tenant_id
+    ).first()
 
-def get_user_by_username(db: Session, username: str):
-    return db.query(models.User).filter(models.User.username == username).first()
+def get_user_by_username(db: Session, username: str, tenant_id: Optional[int] = None):
+    query = db.query(models.User).filter(models.User.username == username)
+    if tenant_id is not None:
+        query = query.filter(models.User.tenant_id == tenant_id)
+    return query.first()
 
 def register_user(db: Session, user: schemas.UserCreate):
+    # Find or create tenant
+    tenant = get_tenant_by_name(db, user.tenant_name)
+    if not tenant:
+        tenant = create_tenant(db, user.tenant_name)
+
     hashed_password = get_password_hash(user.password)
     db_user = models.User(
         username=user.username,
         email=user.email,
-        password_hash=hashed_password
+        password_hash=hashed_password,
+        tenant_id=tenant.id
     )
     db.add(db_user)
     db.commit()
@@ -47,35 +83,42 @@ def login_user(db: Session, username: str, password: str):
         return None
     return user
 
+
 # Blog Post CRUD Operations
-def create_post(db: Session, post: schemas.BlogPostCreate, user_id: int):
+def create_post(db: Session, post: schemas.BlogPostCreate, user_id: int, tenant_id: int):
     db_post = models.BlogPost(
         title=post.title,
         content=post.content,
         excerpt=post.excerpt,
         status=post.status,
-        author_id=user_id
+        author_id=user_id,
+        tenant_id=tenant_id
     )
     db.add(db_post)
     db.commit()
     db.refresh(db_post)
     return db_post
 
-def get_post(db: Session, post_id: int):
-    return db.query(models.BlogPost).filter(models.BlogPost.id == post_id).first()
-
-def get_user_posts(db: Session, user_id: int, skip: int = 0, limit: int = 100):
+def get_post(db: Session, post_id: int, tenant_id: int):
     return db.query(models.BlogPost).filter(
-        models.BlogPost.author_id == user_id
+        models.BlogPost.id == post_id,
+        models.BlogPost.tenant_id == tenant_id
+    ).first()
+
+def get_user_posts(db: Session, user_id: int, tenant_id: int, skip: int = 0, limit: int = 100):
+    return db.query(models.BlogPost).filter(
+        models.BlogPost.author_id == user_id,
+        models.BlogPost.tenant_id == tenant_id
     ).order_by(desc(models.BlogPost.created_at)).offset(skip).limit(limit).all()
 
-def get_recent_posts(db: Session, user_id: int, limit: int = 10):
+def get_recent_posts(db: Session, user_id: int, tenant_id: int, limit: int = 10):
     return db.query(models.BlogPost).filter(
-        models.BlogPost.author_id == user_id
+        models.BlogPost.author_id == user_id,
+        models.BlogPost.tenant_id == tenant_id
     ).order_by(desc(models.BlogPost.created_at)).limit(limit).all()
 
-def update_post(db: Session, post_id: int, post_update: schemas.BlogPostUpdate):
-    db_post = get_post(db, post_id)
+def update_post(db: Session, post_id: int, tenant_id: int, post_update: schemas.BlogPostUpdate):
+    db_post = get_post(db, post_id, tenant_id)
     if not db_post:
         return None
 
@@ -87,8 +130,8 @@ def update_post(db: Session, post_id: int, post_update: schemas.BlogPostUpdate):
     db.refresh(db_post)
     return db_post
 
-def delete_post(db: Session, post_id: int):
-    db_post = get_post(db, post_id)
+def delete_post(db: Session, post_id: int, tenant_id: int):
+    db_post = get_post(db, post_id, tenant_id)
     if not db_post:
         return False
 
@@ -96,45 +139,52 @@ def delete_post(db: Session, post_id: int):
     db.commit()
     return True
 
-def increment_post_views(db: Session, post_id: int):
-    db_post = get_post(db, post_id)
+def increment_post_views(db: Session, post_id: int, tenant_id: int):
+    db_post = get_post(db, post_id, tenant_id)
     if db_post:
         db_post.views += 1
         db.commit()
         db.refresh(db_post)
     return db_post
 
-def search_posts(db: Session, query: str, user_id: int):
+def search_posts(db: Session, query: str, user_id: int, tenant_id: int):
     return db.query(models.BlogPost).filter(
         models.BlogPost.author_id == user_id,
+        models.BlogPost.tenant_id == tenant_id,
         or_(
             models.BlogPost.title.ilike(f"%{query}%"),
             models.BlogPost.content.ilike(f"%{query}%")
         )
     ).order_by(desc(models.BlogPost.created_at)).all()
 
+
 # Comment CRUD Operations
-def create_comment(db: Session, comment: schemas.CommentCreate, user_id: int):
+def create_comment(db: Session, comment: schemas.CommentCreate, user_id: int, tenant_id: int):
     db_comment = models.Comment(
         content=comment.content,
         author_id=user_id,
-        post_id=comment.post_id
+        post_id=comment.post_id,
+        tenant_id=tenant_id
     )
     db.add(db_comment)
     db.commit()
     db.refresh(db_comment)
     return db_comment
 
-def get_post_comments(db: Session, post_id: int):
+def get_post_comments(db: Session, post_id: int, tenant_id: int):
     return db.query(models.Comment).filter(
-        models.Comment.post_id == post_id
+        models.Comment.post_id == post_id,
+        models.Comment.tenant_id == tenant_id
     ).order_by(desc(models.Comment.created_at)).all()
 
-def get_comment(db: Session, comment_id: int):
-    return db.query(models.Comment).filter(models.Comment.id == comment_id).first()
+def get_comment(db: Session, comment_id: int, tenant_id: int):
+    return db.query(models.Comment).filter(
+        models.Comment.id == comment_id,
+        models.Comment.tenant_id == tenant_id
+    ).first()
 
-def delete_comment(db: Session, comment_id: int):
-    db_comment = get_comment(db, comment_id)
+def delete_comment(db: Session, comment_id: int, tenant_id: int):
+    db_comment = get_comment(db, comment_id, tenant_id)
     if not db_comment:
         return False
 
@@ -142,12 +192,14 @@ def delete_comment(db: Session, comment_id: int):
     db.commit()
     return True
 
+
 # Follower CRUD Operations
-def follow_user(db: Session, follower_id: int, following_id: int):
+def follow_user(db: Session, follower_id: int, following_id: int, tenant_id: int):
     # Check if already following
     existing = db.query(models.Follower).filter(
         models.Follower.follower_id == follower_id,
-        models.Follower.following_id == following_id
+        models.Follower.following_id == following_id,
+        models.Follower.tenant_id == tenant_id
     ).first()
 
     if existing:
@@ -155,17 +207,19 @@ def follow_user(db: Session, follower_id: int, following_id: int):
 
     db_follower = models.Follower(
         follower_id=follower_id,
-        following_id=following_id
+        following_id=following_id,
+        tenant_id=tenant_id
     )
     db.add(db_follower)
     db.commit()
     db.refresh(db_follower)
     return db_follower
 
-def unfollow_user(db: Session, follower_id: int, following_id: int):
+def unfollow_user(db: Session, follower_id: int, following_id: int, tenant_id: int):
     db_follower = db.query(models.Follower).filter(
         models.Follower.follower_id == follower_id,
-        models.Follower.following_id == following_id
+        models.Follower.following_id == following_id,
+        models.Follower.tenant_id == tenant_id
     ).first()
 
     if not db_follower:
@@ -175,34 +229,41 @@ def unfollow_user(db: Session, follower_id: int, following_id: int):
     db.commit()
     return True
 
-def get_user_followers(db: Session, user_id: int):
+def get_user_followers(db: Session, user_id: int, tenant_id: int):
     return db.query(models.Follower).filter(
-        models.Follower.following_id == user_id
+        models.Follower.following_id == user_id,
+        models.Follower.tenant_id == tenant_id
     ).all()
 
-def get_user_following(db: Session, user_id: int):
+def get_user_following(db: Session, user_id: int, tenant_id: int):
     return db.query(models.Follower).filter(
-        models.Follower.follower_id == user_id
+        models.Follower.follower_id == user_id,
+        models.Follower.tenant_id == tenant_id
     ).all()
+
 
 # Dashboard Statistics
-def get_dashboard_stats(db: Session, user_id: int):
+def get_dashboard_stats(db: Session, user_id: int, tenant_id: int):
     total_posts = db.query(func.count(models.BlogPost.id)).filter(
-        models.BlogPost.author_id == user_id
+        models.BlogPost.author_id == user_id,
+        models.BlogPost.tenant_id == tenant_id
     ).scalar()
 
     total_views = db.query(func.sum(models.BlogPost.views)).filter(
-        models.BlogPost.author_id == user_id
+        models.BlogPost.author_id == user_id,
+        models.BlogPost.tenant_id == tenant_id
     ).scalar() or 0
 
     total_comments = db.query(func.count(models.Comment.id)).join(
         models.BlogPost
     ).filter(
-        models.BlogPost.author_id == user_id
+        models.BlogPost.author_id == user_id,
+        models.BlogPost.tenant_id == tenant_id
     ).scalar()
 
     total_followers = db.query(func.count(models.Follower.id)).filter(
-        models.Follower.following_id == user_id
+        models.Follower.following_id == user_id,
+        models.Follower.tenant_id == tenant_id
     ).scalar()
 
     return {

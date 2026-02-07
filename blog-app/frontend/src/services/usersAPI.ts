@@ -14,6 +14,7 @@ export interface User {
   id?: number;
   username: string;
   email: string;
+  tenant_id?: number;
   created_at?: string;
   updated_at?: string;
 }
@@ -22,6 +23,7 @@ export interface RegisterUser {
   username: string;
   email: string;
   password: string;
+  tenant_name: string;
 }
 
 export const userApi = {

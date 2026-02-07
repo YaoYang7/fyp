@@ -3,12 +3,29 @@ from datetime import datetime
 from typing import Optional, List
 from enum import Enum
 
+# Tenant Schemas
+class TenantBase(BaseModel):
+    name: str
+
+class TenantCreate(TenantBase):
+    pass
+
+class Tenant(TenantBase):
+    id: int
+    slug: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# User Schemas
 class UserBase(BaseModel):
     username: str
     email: EmailStr
 
 class UserCreate(UserBase):
     password: str
+    tenant_name: str
 
 class UserUpdate(BaseModel):
     username: Optional[str] = None
@@ -20,6 +37,7 @@ class UserUpdatePassword(BaseModel):
 
 class User(UserBase):
     id: int
+    tenant_id: int
     created_at: datetime
     updated_at: Optional[datetime] = None
 
