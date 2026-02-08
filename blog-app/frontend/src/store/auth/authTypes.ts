@@ -2,6 +2,8 @@ export interface User {
   id: number;
   username: string;
   email: string;
+  tenant_id: number;
+  tenant_name?: string;
   created_at: string;
   updated_at?: string;
 }

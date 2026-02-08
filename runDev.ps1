@@ -4,7 +4,7 @@ Start-Process powershell "-NoExit", `
 
 Write-Host "STARTING FRONTEND"
 Start-Process powershell "-NoExit", `
-  "cd blog-app/frontend; npm run dev"
+  "cd blog-app/frontend; npm install; npm run dev"
 Start-Sleep -Seconds 3
 
 Write-Host "OPENING IN CHROME"

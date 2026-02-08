@@ -28,41 +28,48 @@ export interface BlogPost {
   id: number;
   title: string;
   content: string;
-  excerpt: string;
+  summary: string;
   author: string;
   author_id: number;
   date: string;
   views: number;
   comments: number;
-  status: 'published' | 'draft' | 'scheduled';
+  status: 'published' | 'draft';
   created_at?: string;
   updated_at?: string;
 }
 
 export interface DashboardStats {
   totalPosts: number;
-  totalViews: number;
   totalComments: number;
 }
 
 export interface CreatePostData {
   title: string;
   content: string;
-  excerpt?: string;
-  status: 'published' | 'draft' | 'scheduled';
+  summary?: string;
+  status: 'published' | 'draft';
 }
 
 export interface UpdatePostData {
   title?: string;
   content?: string;
-  excerpt?: string;
-  status?: 'published' | 'draft' | 'scheduled';
+  summary?: string;
+  status?: 'published' | 'draft';
 }
 
 export const dashboardApi = {
   // Get dashboard statistics
   getStats: async (): Promise<DashboardStats> => {
     const response = await api.get('/dashboard/stats');
+    return response.data;
+  },
+
+  // Get all published posts in the tenant (feed)
+  getFeedPosts: async (limit: number = 50): Promise<BlogPost[]> => {
+    const response = await api.get('/posts/feed', {
+      params: { limit },
+    });
     return response.data;
   },
 

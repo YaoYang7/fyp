@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Typography } from "@mui/material";
 import Register from "../components/Register";
 import Login from "../components/Login";
 import LandingComponent from "../components/Landing";
@@ -32,21 +31,13 @@ const HomePage: React.FC = () => {
                             onSwitchToRegister={() => navigate(registerPath)}
                         />;
             case "register":
-                return (
-                    <>
-                        <Typography variant="h4" gutterBottom>Register</Typography>
-                        <Register onSwitchToLogin={() => navigate(loginPath)}/>
-                    </>
-                );
+                return <Register onSwitchToLogin={() => navigate(loginPath)}/>;
             case "login":
                 return (
-                    <>
-                        <Typography variant="h4" gutterBottom>Login</Typography>
-                        <Login
-                            onSwitchToRegister={() => navigate(registerPath)}
-                            onLoginSuccess={() => navigate("/home")}
-                        />
-                    </>
+                    <Login
+                        onSwitchToRegister={() => navigate(registerPath)}
+                        onLoginSuccess={() => navigate("/home")}
+                    />
                 );
             default:
                 return <LandingComponent

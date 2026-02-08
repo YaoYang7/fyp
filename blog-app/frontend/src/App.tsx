@@ -5,6 +5,11 @@ import SidePanelLayout from "./components/SidePanelLayout";
 import { ProtectedRoute, GuestRoute } from "./components/RouteSettings";
 import HomePage from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
+import AccountInfoPage from "./pages/AccountInfoPage";
+import CreatePost from "./pages/CreatePost";
+import ManageBlog from "./pages/ManageBlog";
+import EditPost from "./pages/EditPost";
+import GroupBlogFeeds from "./pages/GroupBlogFeeds";
 
 function App() {
   return (
@@ -26,6 +31,46 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/account_info"
+              element={
+                <ProtectedRoute>
+                  <AccountInfoPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/create_post"
+              element={
+                <ProtectedRoute>
+                  <CreatePost />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/manage_blog"
+              element={
+                <ProtectedRoute>
+                  <ManageBlog />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/edit_post/:id"
+              element={
+                <ProtectedRoute>
+                  <EditPost />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/feed"
+              element={
+                <ProtectedRoute>
+                  <GroupBlogFeeds />
                 </ProtectedRoute>
               }
             />

@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Box, Button, TextField, Typography, Paper, Link, Alert, CircularProgress } from '@mui/material';
+import { Box, Button, TextField, Typography, Paper, Link, Alert, CircularProgress, ToggleButtonGroup, ToggleButton } from '@mui/material';
 import IconButton from "@mui/material/IconButton";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import { userApi } from '../services/usersAPI';
 
 interface FormData {
+  tenantName: string;
   username: string;
   email: string;
   password: string;
@@ -18,6 +19,7 @@ interface RegisterProps {
 
 export default function Register(props: RegisterProps) {
   const [formData, setFormData] = useState<FormData>({
+    tenantName: '',
     username: '',
     email: '',
     password: '',
@@ -27,6 +29,7 @@ export default function Register(props: RegisterProps) {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [mode, setMode] = useState<'create' | 'join'>('create');
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState<string>('');
 
@@ -40,6 +43,10 @@ export default function Register(props: RegisterProps) {
 
   const validate = (): boolean => {
     const newErrors: Partial<FormData> = {};
+
+    if (!formData.tenantName.trim()) {
+      newErrors.tenantName = 'Group name is required';
+    }
 
     if (!formData.username.trim()) {
       newErrors.username = 'Username is required';
@@ -74,7 +81,9 @@ export default function Register(props: RegisterProps) {
         await userApi.register({
           username: formData.username,
           email: formData.email,
-          password: formData.password
+          password: formData.password,
+          tenant_name: formData.tenantName,
+          mode: mode
         });
 
         setIsSubmitted(true);
@@ -144,6 +153,24 @@ export default function Register(props: RegisterProps) {
           Create an account to get started
         </Typography>
 
+        <ToggleButtonGroup
+          value={mode}
+          exclusive
+          onChange={(_, newMode) => {
+            if (newMode !== null) {
+              setMode(newMode);
+              setFormData(prev => ({ ...prev, tenantName: '' }));
+              setErrors(prev => ({ ...prev, tenantName: '' }));
+              setApiError('');
+            }
+          }}
+          fullWidth
+          sx={{ mb: 2 }}
+        >
+          <ToggleButton value="create" sx={{ fontWeight: mode === 'create' ? 'bold' : 'normal' }}>Create Group</ToggleButton>
+          <ToggleButton value="join" sx={{ fontWeight: mode === 'join' ? 'bold' : 'normal' }}>Join Group</ToggleButton>
+        </ToggleButtonGroup>
+
         {apiError && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {apiError}
@@ -151,11 +178,29 @@ export default function Register(props: RegisterProps) {
         )}
 
         <TextField
+          label={mode === 'create' ? 'New Group Name' : 'Existing Group Name'}
+          name="tenantName"
+          value={formData.tenantName}
+          onChange={handleChange}
+          onKeyDown={(e) => {if (e.key === ' ') {
+              e.preventDefault()
+            };
+          }}          fullWidth
+          margin="normal"
+          error={!!errors.tenantName}
+          helperText={errors.tenantName || (mode === 'join' ? 'Enter the exact name of the group you want to join' : '')}
+          autoComplete="off"
+        />
+
+        <TextField
           label="Username"
           name="username"
           value={formData.username}
           onChange={handleChange}
-          fullWidth
+          onKeyDown={(e) => {if (e.key === ' ') {
+              e.preventDefault()
+            }; 
+          }}          fullWidth
           margin="normal"
           error={!!errors.username}
           helperText={errors.username}
@@ -168,6 +213,10 @@ export default function Register(props: RegisterProps) {
           type="email"
           value={formData.email}
           onChange={handleChange}
+                    onKeyDown={(e) => {if (e.key === ' ') {
+              e.preventDefault()
+            }; 
+          }}
           fullWidth
           margin="normal"
           error={!!errors.email}

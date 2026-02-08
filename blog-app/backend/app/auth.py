@@ -43,3 +43,11 @@ def get_current_user(
         )
 
     return user
+
+def get_current_tenant_id(
+    current_user: models.User = Depends(get_current_user),
+) -> int:
+    """
+    Convenience dependency that returns just the tenant_id from the current user.
+    """
+    return current_user.tenant_id

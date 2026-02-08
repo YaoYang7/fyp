@@ -3,12 +3,30 @@ from datetime import datetime
 from typing import Optional, List
 from enum import Enum
 
+# Tenant Schemas
+class TenantBase(BaseModel):
+    name: str
+
+class TenantCreate(TenantBase):
+    pass
+
+class Tenant(TenantBase):
+    id: int
+    slug: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# User Schemas
 class UserBase(BaseModel):
     username: str
     email: EmailStr
 
 class UserCreate(UserBase):
     password: str
+    tenant_name: str
+    mode: str = "create"  # "create" or "join"
 
 class UserUpdate(BaseModel):
     username: Optional[str] = None
@@ -20,6 +38,8 @@ class UserUpdatePassword(BaseModel):
 
 class User(UserBase):
     id: int
+    tenant_id: int
+    tenant_name: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -42,12 +62,11 @@ class LoginResponse(BaseModel):
 class PostStatus(str, Enum):
     published = "published"
     draft = "draft"
-    scheduled = "scheduled"
 
 class BlogPostBase(BaseModel):
     title: str
     content: str
-    excerpt: Optional[str] = None
+    summary: Optional[str] = None
     status: PostStatus = PostStatus.draft
 
 class BlogPostCreate(BlogPostBase):
@@ -56,7 +75,7 @@ class BlogPostCreate(BlogPostBase):
 class BlogPostUpdate(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
-    excerpt: Optional[str] = None
+    summary: Optional[str] = None
     status: Optional[PostStatus] = None
 
 class BlogPost(BlogPostBase):
@@ -89,25 +108,7 @@ class Comment(CommentBase):
     class Config:
         from_attributes = True
 
-# Follower Schemas
-class FollowerBase(BaseModel):
-    following_id: int
-
-class FollowerCreate(FollowerBase):
-    pass
-
-class Follower(BaseModel):
-    id: int
-    follower_id: int
-    following_id: int
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
-
 # Dashboard Schemas
 class DashboardStats(BaseModel):
     totalPosts: int
-    totalViews: int
     totalComments: int
-    totalFollowers: int

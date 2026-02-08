@@ -15,29 +15,36 @@ import {
   IconButton,
   CircularProgress,
   Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
 import {
   Article as ArticleIcon,
-  Visibility as VisibilityIcon,
   Comment as CommentIcon,
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../store/hooks';
 import { dashboardApi } from '../services/dashboardAPI';
 import type { BlogPost, DashboardStats } from '../services/dashboardAPI';
 
 const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [stats, setStats] = useState<DashboardStats>({
     totalPosts: 0,
-    totalViews: 0,
     totalComments: 0,
   });
   const [recentPosts, setRecentPosts] = useState<BlogPost[]>([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [postToDelete, setPostToDelete] = useState<BlogPost | null>(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -63,14 +70,32 @@ const Dashboard: React.FC = () => {
     fetchDashboardData();
   }, [user]);
 
+  const handleDeleteClick = (post: BlogPost) => {
+    setPostToDelete(post);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!postToDelete) return;
+    try {
+      await dashboardApi.deletePost(postToDelete.id);
+      setRecentPosts((prev) => prev.filter((p) => p.id !== postToDelete.id));
+      setStats((prev) => ({ ...prev, totalPosts: prev.totalPosts - 1 }));
+      setDeleteDialogOpen(false);
+      setPostToDelete(null);
+    } catch (err) {
+      console.error('Error deleting post:', err);
+      setError('Failed to delete post.');
+      setDeleteDialogOpen(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'published':
         return 'success';
       case 'draft':
         return 'warning';
-      case 'scheduled':
-        return 'info';
       default:
         return 'default';
     }
@@ -139,7 +164,7 @@ const Dashboard: React.FC = () => {
           gridTemplateColumns: {
             xs: '1fr',
             sm: 'repeat(2, 1fr)',
-            md: 'repeat(3, 1fr)',
+            md: 'repeat(2, 1fr)',
           },
           gap: 3,
           mb: 4,
@@ -152,12 +177,6 @@ const Dashboard: React.FC = () => {
           color="#1976d2"
         />
         <StatCard
-          title="Total Views"
-          value={stats.totalViews}
-          icon={<VisibilityIcon />}
-          color="#2e7d32"
-        />
-        <StatCard
           title="Comments"
           value={stats.totalComments}
           icon={<CommentIcon />}
@@ -165,129 +184,87 @@ const Dashboard: React.FC = () => {
         />
       </Box>
 
-      {/* Recent Posts and Quick Actions */}
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: {
-            xs: '1fr',
-            md: '2fr 1fr',
-          },
-          gap: 3,
-        }}
-      >
-        {/* Recent Posts */}
-        <Box>
-          <Paper sx={{ p: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6" component="h2">
-                Recent Posts
-              </Typography>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                sx={{ textTransform: 'none' }}
-              >
-                New Post
-              </Button>
-            </Box>
-            <List>
-              {recentPosts.map((post, index) => (
-                <ListItem
-                  key={post.id}
-                  sx={{
-                    borderBottom: index < recentPosts.length - 1 ? '1px solid #e0e0e0' : 'none',
-                    px: 0,
-                  }}
-                  secondaryAction={
-                    <Box>
-                      <IconButton edge="end" aria-label="edit" sx={{ mr: 1 }}>
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton edge="end" aria-label="delete">
-                        <DeleteIcon />
-                      </IconButton>
-                    </Box>
-                  }
-                >
-                  <ListItemAvatar>
-                    <Avatar sx={{ bgcolor: '#1976d2' }}>
-                      <ArticleIcon />
-                    </Avatar>
-                  </ListItemAvatar>
-                  <ListItemText
-                    primary={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="subtitle1">{post.title}</Typography>
-                        <Chip
-                          label={post.status}
-                          size="small"
-                          color={getStatusColor(post.status) as any}
-                        />
-                      </Box>
-                    }
-                    secondary={
-                      <Box sx={{ mt: 1 }}>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                          {post.excerpt}
-                        </Typography>
-                        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                          <Typography variant="caption" color="text.secondary">
-                            {post.date}
-                          </Typography>
-                          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                            <VisibilityIcon sx={{ fontSize: 14 }} />
-                            <Typography variant="caption">{post.views}</Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                            <CommentIcon sx={{ fontSize: 14 }} />
-                            <Typography variant="caption">{post.comments}</Typography>
-                          </Box>
-                        </Box>
-                      </Box>
-                    }
-                  />
-                </ListItem>
-              ))}
-            </List>
-          </Paper>
+      {/* Recent Posts */}
+      <Paper sx={{ p: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h6" component="h2">
+            Recent Posts
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            sx={{ textTransform: 'none' }}
+            onClick={() => navigate('/create_post')}
+          >
+            New Post
+          </Button>
         </Box>
+        <List>
+          {recentPosts.map((post, index) => (
+            <ListItem
+              key={post.id}
+              sx={{
+                borderBottom: index < recentPosts.length - 1 ? '1px solid #e0e0e0' : 'none',
+                px: 0,
+              }}
+              secondaryAction={
+                <Box>
+                  <IconButton edge="end" aria-label="edit" sx={{ mr: 1 }} onClick={() => navigate(`/edit_post/${post.id}`)}>
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton edge="end" aria-label="delete" onClick={() => handleDeleteClick(post)}>
+                    <DeleteIcon />
+                  </IconButton>
+                </Box>
+              }
+            >
+              <ListItemAvatar>
+                <Avatar sx={{ bgcolor: '#1976d2' }}>
+                  <ArticleIcon />
+                </Avatar>
+              </ListItemAvatar>
+              <ListItemText
+                primary={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="subtitle1">{post.title}</Typography>
+                    <Chip
+                      label={post.status}
+                      size="small"
+                      color={getStatusColor(post.status) as any}
+                    />
+                  </Box>
+                }
+                secondary={
+                  <Box sx={{ mt: 1 }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                      {post.summary}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {post.date}
+                    </Typography>
+                  </Box>
+                }
+              />
+            </ListItem>
+          ))}
+        </List>
+      </Paper>
 
-        {/* Quick Actions & Info */}
-        <Box>
-          <Paper sx={{ p: 3, mb: 3 }}>
-            <Typography variant="h6" component="h2" gutterBottom>
-              Quick Actions
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Button
-                variant="outlined"
-                fullWidth
-                startIcon={<AddIcon />}
-                sx={{ textTransform: 'none', justifyContent: 'flex-start' }}
-              >
-                Create New Post
-              </Button>
-              <Button
-                variant="outlined"
-                fullWidth
-                startIcon={<ArticleIcon />}
-                sx={{ textTransform: 'none', justifyContent: 'flex-start' }}
-              >
-                Manage Posts
-              </Button>
-              <Button
-                variant="outlined"
-                fullWidth
-                startIcon={<CommentIcon />}
-                sx={{ textTransform: 'none', justifyContent: 'flex-start' }}
-              >
-                View Comments
-              </Button>
-            </Box>
-          </Paper>
-        </Box>
-      </Box>
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>Delete Post</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete "{postToDelete?.title}"? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

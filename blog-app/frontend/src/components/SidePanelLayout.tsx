@@ -10,17 +10,22 @@ import {
   ListItem,
   ListItemButton,
   ListItemText,
-  Button,
+  Divider,
 } from '@mui/material';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { logout } from '../store/auth/authActions';
 import AccountInfo from './AccountInfo';
+import LoggedInActions from './LoggedInActions';
 
 const drawerWidth = 240;
 
 const navigationItems = [
   { label: 'Home', path: '/home', requiresAuth: false },
   { label: 'Dashboard', path: '/dashboard', requiresAuth: true },
+  { label: 'Create New Post', path: '/create_post', requiresAuth: true },
+  { label: 'Manage Posts', path: '/manage_blog', requiresAuth: true },
+  { label: 'Group Posts', path: '/feed', requiresAuth: true },
+  { label: 'Account Info', path: '/account_info', requiresAuth: true },
   { label: 'Register', path: '/home?view=register', requiresAuth: false, authOnly: false },
   { label: 'Login', path: '/home?view=login', requiresAuth: false, authOnly: false },
 ] as const;
@@ -30,7 +35,7 @@ interface SidePanelLayoutProps {
 }
 
 const SidePanelLayout: React.FC<SidePanelLayoutProps> = ({ children }) => {
-  const { isLoggedIn, user } = useAppSelector((state) => state.auth);
+  const { isLoggedIn } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const location = useLocation();
@@ -54,6 +59,11 @@ const SidePanelLayout: React.FC<SidePanelLayoutProps> = ({ children }) => {
       return currentPath === path;
     }
 
+    // Highlight Manage Posts when editing a post
+    if (path === '/manage_blog' && location.pathname.startsWith('/edit_post')) {
+      return true;
+    }
+
     // For paths without query params, ensure current URL also has no query params
     return currentPath === path && !location.search;
   };
@@ -63,22 +73,24 @@ const SidePanelLayout: React.FC<SidePanelLayoutProps> = ({ children }) => {
       <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
         <Toolbar>
           <Typography variant="h6" sx={{ flexGrow: 1, textAlign: 'center' }}>
-            Blog Application / Platform
+            {location.pathname === '/dashboard'
+              ? 'Dashboard'
+              : location.pathname === '/create_post'
+                ? 'Create Post'
+                : location.pathname === '/manage_blog'
+                  ? 'Manage Posts'
+                  : location.pathname.startsWith('/edit_post')
+                    ? 'Edit Post'
+                    : location.pathname === '/feed'
+                      ? 'Group Posts'
+                      : location.pathname === '/account_info'
+                      ? 'Account Info'
+                      : location.search === '?view=login'
+                        ? 'Login'
+                        : location.search === '?view=register'
+                          ? 'Register'
+                          : 'Blog Application / Platform'}
           </Typography>
-          {isLoggedIn && user && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Typography variant="body1" sx={{ color: 'white' }}>
-                Welcome, {user.username}
-              </Typography>
-              <Button
-                color="inherit"
-                onClick={handleLogout}
-                sx={{ textTransform: 'none' }}
-              >
-                Logout
-              </Button>
-            </Box>
-          )}
         </Toolbar>
       </AppBar>
 
@@ -95,7 +107,8 @@ const SidePanelLayout: React.FC<SidePanelLayoutProps> = ({ children }) => {
       >
         <Toolbar />
         <Box sx={{ overflow: 'auto', display: 'flex', flexDirection: 'column', height: '100%' }}>
-          {isLoggedIn && <AccountInfo />}
+          {isLoggedIn ? <AccountInfo /> : null}
+          {isLoggedIn ? <Divider sx={{ my: 2 }} /> : null}
           <List>
             {navigationItems
               .filter((item) => {
@@ -119,20 +132,14 @@ const SidePanelLayout: React.FC<SidePanelLayoutProps> = ({ children }) => {
                   </ListItemButton>
                 </ListItem>
               ))}
-            {isLoggedIn && (
-              <ListItem disablePadding>
-                <ListItemButton onClick={handleLogout}>
-                  <ListItemText primary="Logout" />
-                </ListItemButton>
-              </ListItem>
-            )}
           </List>
+          {isLoggedIn ? <LoggedInActions onLogout={handleLogout} /> : null}
         </Box>
       </Drawer>
 
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
         <Toolbar />
-        {children}
+        {children}  
       </Box>
     </Box>
   );
