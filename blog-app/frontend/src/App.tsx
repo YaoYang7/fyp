@@ -10,6 +10,7 @@ import CreatePost from "./pages/CreatePost";
 import ManageBlog from "./pages/ManageBlog";
 import EditPost from "./pages/EditPost";
 import GroupBlogFeeds from "./pages/GroupBlogFeeds";
+import ViewPost from "./pages/ViewPost";
 
 function App() {
   return (
@@ -71,6 +72,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <GroupBlogFeeds />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/post/:id"
+              element={
+                <ProtectedRoute>
+                  <ViewPost />
                 </ProtectedRoute>
               }
             />

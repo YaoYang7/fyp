@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Paper,
@@ -11,62 +12,81 @@ import {
   Chip,
   CircularProgress,
   Alert,
+  Button,
+  Divider,
 } from '@mui/material';
 import {
   Article as ArticleIcon,
+  Visibility,
+  Refresh,
 } from '@mui/icons-material';
 import { dashboardApi } from '../services/dashboardAPI';
 import type { BlogPost } from '../services/dashboardAPI';
+import SafeHTML from '../components/SafeHTML';
+import * as styles from './GroupBlogFeedsStyles';
 
 const GroupBlogFeeds: React.FC = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string>('');
   const [posts, setPosts] = useState<BlogPost[]>([]);
 
-  useEffect(() => {
-    const fetchFeed = async () => {
-      try {
+  const fetchFeed = async (isRefresh = false) => {
+    try {
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
         setLoading(true);
-        setError('');
-        const data = await dashboardApi.getFeedPosts();
-        setPosts(data);
-      } catch (err) {
-        console.error('Error fetching feed:', err);
-        setError('Failed to load feed. Please try again later.');
-      } finally {
-        setLoading(false);
       }
-    };
+      setError('');
+      const data = await dashboardApi.getFeedPosts();
+      setPosts(data);
+    } catch (err) {
+      console.error('Error fetching feed:', err);
+      setError('Failed to load feed. Please try again later.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
+  useEffect(() => {
     fetchFeed();
   }, []);
 
   if (loading) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '60vh',
-        }}
-      >
+      <Box sx={styles.loadingContainer}>
         <CircularProgress />
       </Box>
     );
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={styles.pageContainer}>
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
+        <Alert severity="error" sx={styles.errorAlert} onClose={() => setError('')}>
           {error}
         </Alert>
       )}
 
-      <Paper sx={{ p: 3 }}>
+      <Paper sx={styles.paper}>
+        <Box sx={styles.headerRow}>
+          <Typography variant="h6">Recent Group Posts</Typography>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={refreshing ? <CircularProgress size={16} /> : <Refresh />}
+            onClick={() => fetchFeed(true)}
+            disabled={refreshing}
+          >
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </Button>
+        </Box>
+        <Divider sx={styles.divider} />
         {posts.length === 0 ? (
-          <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+          <Typography variant="body1" color="text.secondary" sx={styles.emptyMessage}>
             No published posts yet. Be the first to publish!
           </Typography>
         ) : (
@@ -74,19 +94,16 @@ const GroupBlogFeeds: React.FC = () => {
             {posts.map((post, index) => (
               <ListItem
                 key={post.id}
-                sx={{
-                  borderBottom: index < posts.length - 1 ? '1px solid #e0e0e0' : 'none',
-                  px: 0,
-                }}
+                sx={index < posts.length - 1 ? styles.listItemBorder : styles.listItemLast}
               >
                 <ListItemAvatar>
-                  <Avatar sx={{ bgcolor: '#1976d2' }}>
+                  <Avatar sx={styles.avatar}>
                     <ArticleIcon />
                   </Avatar>
                 </ListItemAvatar>
                 <ListItemText
                   primary={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box sx={styles.postTitleRow}>
                       <Typography variant="subtitle1">{post.title}</Typography>
                       <Chip
                         label={post.status}
@@ -96,11 +113,16 @@ const GroupBlogFeeds: React.FC = () => {
                     </Box>
                   }
                   secondary={
-                    <Box sx={{ mt: 1 }}>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                        {post.summary}
-                      </Typography>
-                      <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                    <Box sx={styles.secondaryContent}>
+                      {post.summary && (
+                        <Typography variant="body2" color="text.secondary" sx={styles.summaryText}>
+                          {post.summary}
+                        </Typography>
+                      )}
+                      <Box sx={styles.contentPreview}>
+                        <SafeHTML html={post.content} />
+                      </Box>
+                      <Box sx={styles.metaRow}>
                         <Typography variant="caption" color="text.secondary">
                           By <strong>{post.author}</strong>
                         </Typography>
@@ -111,6 +133,15 @@ const GroupBlogFeeds: React.FC = () => {
                     </Box>
                   }
                 />
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<Visibility />}
+                  onClick={() => navigate(`/post/${post.id}`)}
+                  sx={styles.viewButton}
+                >
+                  View
+                </Button>
               </ListItem>
             ))}
           </List>

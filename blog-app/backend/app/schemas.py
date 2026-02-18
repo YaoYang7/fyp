@@ -82,7 +82,6 @@ class BlogPost(BlogPostBase):
     id: int
     author_id: int
     author: str  # Username of the author
-    views: int
     comments: int  # Count of comments
     date: str  # Formatted date for frontend
     created_at: datetime

@@ -174,13 +174,13 @@ const Dashboard: React.FC = () => {
           title="Total Posts"
           value={stats.totalPosts}
           icon={<ArticleIcon />}
-          color="#1976d2"
+          color="primary.main"
         />
         <StatCard
           title="Comments"
           value={stats.totalComments}
           icon={<CommentIcon />}
-          color="#ed6c02"
+          color="warning.main"
         />
       </Box>
 
@@ -204,7 +204,8 @@ const Dashboard: React.FC = () => {
             <ListItem
               key={post.id}
               sx={{
-                borderBottom: index < recentPosts.length - 1 ? '1px solid #e0e0e0' : 'none',
+                borderBottom: index < recentPosts.length - 1 ? 1 : 'none',
+                borderColor: 'divider',
                 px: 0,
               }}
               secondaryAction={
@@ -219,7 +220,7 @@ const Dashboard: React.FC = () => {
               }
             >
               <ListItemAvatar>
-                <Avatar sx={{ bgcolor: '#1976d2' }}>
+                <Avatar sx={{ bgcolor: 'primary.main' }}>
                   <ArticleIcon />
                 </Avatar>
               </ListItemAvatar>

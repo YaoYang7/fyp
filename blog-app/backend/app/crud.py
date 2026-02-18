@@ -148,14 +148,6 @@ def delete_post(db: Session, post_id: int, tenant_id: int):
     db.commit()
     return True
 
-def increment_post_views(db: Session, post_id: int, tenant_id: int):
-    db_post = get_post(db, post_id, tenant_id)
-    if db_post:
-        db_post.views += 1
-        db.commit()
-        db.refresh(db_post)
-    return db_post
-
 def search_posts(db: Session, query: str, user_id: int, tenant_id: int):
     return db.query(models.BlogPost).filter(
         models.BlogPost.author_id == user_id,
@@ -220,3 +212,33 @@ def get_dashboard_stats(db: Session, user_id: int, tenant_id: int):
         "totalPosts": total_posts,
         "totalComments": total_comments,
     }
+
+
+# Upload CRUD Operations
+def create_upload(db: Session, filename: str, original_filename: str,
+                  content_type: str, file_size: int, user_id: int, tenant_id: int):
+    db_upload = models.Upload(
+        filename=filename,
+        original_filename=original_filename,
+        content_type=content_type,
+        file_size=file_size,
+        user_id=user_id,
+        tenant_id=tenant_id,
+    )
+    db.add(db_upload)
+    db.commit()
+    db.refresh(db_upload)
+    return db_upload
+
+
+def get_user_storage_used(db: Session, user_id: int) -> int:
+    result = db.query(func.coalesce(func.sum(models.Upload.file_size), 0)).filter(
+        models.Upload.user_id == user_id
+    ).scalar()
+    return result
+
+
+def extract_upload_filenames(content: str, tenant_id: int) -> list:
+    """Extract upload filenames from post HTML content."""
+    pattern = rf'/uploads/{tenant_id}/([a-f0-9]{{32}}\.[a-zA-Z0-9]+)'
+    return re.findall(pattern, content)

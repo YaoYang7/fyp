@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-// TODO: Put this into an ENV variable later
-const API_BASE_URL = 'http://localhost:8000/api'; // Development base URL
+const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api`;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -32,7 +31,6 @@ export interface BlogPost {
   author: string;
   author_id: number;
   date: string;
-  views: number;
   comments: number;
   status: 'published' | 'draft';
   created_at?: string;
@@ -113,6 +111,18 @@ export const dashboardApi = {
   // Get comments for a specific post
   getPostComments: async (postId: number): Promise<any[]> => {
     const response = await api.get(`/posts/${postId}/comments`);
+    return response.data;
+  },
+
+  // Upload a file (image or video)
+  uploadFile: async (file: File): Promise<{ url: string }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post('/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 

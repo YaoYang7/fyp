@@ -1,70 +1,80 @@
-import { createTheme } from "@mui/material/styles";
+import { createTheme, type PaletteMode } from "@mui/material/styles";
 
-const theme = createTheme({
-  palette: {
-    mode: "light",
+export const getTheme = (mode: PaletteMode) =>
+  createTheme({
+    palette: {
+      mode,
 
-    primary: {
-      main: "#1976d2", // MUI default blue
-      light: "#63a4ff",
-      dark: "#004ba0",
-      contrastText: "#ffffff",
-    },
+      primary: {
+        main: "#1976d2",
+        light: "#63a4ff",
+        dark: "#004ba0",
+        contrastText: "#ffffff",
+      },
 
-    secondary: {
-      main: "#ffffff",
-    },
+      secondary: {
+        main: mode === "light" ? "#ffffff" : "#1e1e1e",
+      },
 
-    background: {
-      default: "#f5f9ff", // soft blue-white background
-      paper: "#ffffff",
-    },
+      background: {
+        default: mode === "light" ? "#f5f9ff" : "#121212",
+        paper: mode === "light" ? "#ffffff" : "#1e1e1e",
+      },
 
-    text: {
-      primary: "#0d1b2a",
-      secondary: "#415a77",
-    },
-  },
-
-  components: {
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: 8,
-          textTransform: "none",
-        },
+      text: {
+        primary: mode === "light" ? "#0d1b2a" : "#e0e0e0",
+        secondary: mode === "light" ? "#415a77" : "#a0aab4",
       },
     },
-    MuiAppBar: {
-      styleOverrides: {
-        root: {
-          backgroundColor: "#1976d2",
+
+    components: {
+      MuiButton: {
+        styleOverrides: {
+          root: {
+            borderRadius: 8,
+            textTransform: "none",
+          },
         },
       },
-    },
-    MuiDrawer: {
-      styleOverrides: {
-        paper: {
-          backgroundColor: "#f5f5f5",
+      MuiAppBar: {
+        styleOverrides: {
+          root: {
+            backgroundColor: mode === "light" ? "#1976d2" : "#1a1a2e",
+          },
         },
       },
-    },
-    MuiListItemButton: {
-      styleOverrides: {
-        root: {
-          "&.Mui-selected": {
-            backgroundColor: "#d0d0d0",
+      MuiDrawer: {
+        styleOverrides: {
+          paper: {
+            backgroundColor: mode === "light" ? "#f5f5f5" : "#1e1e1e",
+          },
+        },
+      },
+      MuiListItemButton: {
+        styleOverrides: {
+          root: {
+            "&.Mui-selected": {
+              backgroundColor:
+                mode === "light"
+                  ? "rgba(0, 0, 0, 0.12)"
+                  : "rgba(255, 255, 255, 0.12)",
+              "&:hover": {
+                backgroundColor:
+                  mode === "light"
+                    ? "rgba(0, 0, 0, 0.16)"
+                    : "rgba(255, 255, 255, 0.16)",
+              },
+            },
             "&:hover": {
-              backgroundColor: "#c0c0c0",
+              backgroundColor:
+                mode === "light"
+                  ? "rgba(0, 0, 0, 0.06)"
+                  : "rgba(255, 255, 255, 0.06)",
             },
           },
-          "&:hover": {
-            backgroundColor: "#e8e8e8",
-          },
         },
       },
     },
-  },
-});
+  });
 
-export default theme;
+export default getTheme("light");

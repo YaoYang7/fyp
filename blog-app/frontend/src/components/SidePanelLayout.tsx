@@ -11,8 +11,12 @@ import {
   ListItemButton,
   ListItemText,
   Divider,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
+import { DarkMode, LightMode } from '@mui/icons-material';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
+import { useThemeContext } from '../theme/ThemeContext';
 import { logout } from '../store/auth/authActions';
 import AccountInfo from './AccountInfo';
 import LoggedInActions from './LoggedInActions';
@@ -39,6 +43,7 @@ const SidePanelLayout: React.FC<SidePanelLayoutProps> = ({ children }) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+  const { mode, toggleTheme } = useThemeContext();
 
   const handleNavigation = (path: string) => {
     navigate(path);
@@ -91,6 +96,11 @@ const SidePanelLayout: React.FC<SidePanelLayoutProps> = ({ children }) => {
                           ? 'Register'
                           : 'Blog Application / Platform'}
           </Typography>
+          <Tooltip title={mode === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}>
+            <IconButton color="inherit" onClick={toggleTheme}>
+              {mode === 'light' ? <DarkMode /> : <LightMode />}
+            </IconButton>
+          </Tooltip>
         </Toolbar>
       </AppBar>
 

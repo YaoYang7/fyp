@@ -171,7 +171,11 @@ const LandingComponent: React.FC<LandingProps> = (props) => {
             </Container>
 
             {/* CTA Section */}
-            <Box sx={{ bgcolor: "grey.100", py: 10 }}>
+            <Box sx={(theme) => ({
+                bgcolor: theme.palette.mode === "light" ? "grey.100" : "grey.900",
+                color: theme.palette.mode === "light" ? "text.primary" : "grey.100",
+                py: 10,
+            })}>
                 <Container maxWidth="md">
                     <Box textAlign="center">
                         <Typography

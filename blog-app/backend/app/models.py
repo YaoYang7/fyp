@@ -17,6 +17,7 @@ class Tenant(Base):
     users = relationship("User", back_populates="tenant", cascade="all, delete-orphan")
     posts = relationship("BlogPost", back_populates="tenant", cascade="all, delete-orphan")
     comments = relationship("Comment", back_populates="tenant", cascade="all, delete-orphan")
+    uploads = relationship("Upload", back_populates="tenant", cascade="all, delete-orphan")
 
 
 class User(Base):
@@ -38,6 +39,7 @@ class User(Base):
     tenant = relationship("Tenant", back_populates="users")
     posts = relationship("BlogPost", back_populates="author", cascade="all, delete-orphan")
     comments = relationship("Comment", back_populates="author", cascade="all, delete-orphan")
+    uploads = relationship("Upload", back_populates="user", cascade="all, delete-orphan")
 
 
 
@@ -55,7 +57,6 @@ class BlogPost(Base):
     summary = Column(Text)
     author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
-    views = Column(Integer, default=0)
     status = Column(Enum(PostStatus), default=PostStatus.draft, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -81,3 +82,20 @@ class Comment(Base):
     tenant = relationship("Tenant", back_populates="comments")
     author = relationship("User", back_populates="comments")
     post = relationship("BlogPost", back_populates="comments")
+
+
+class Upload(Base):
+    __tablename__ = "uploads"
+
+    id = Column(Integer, primary_key=True, index=True)
+    filename = Column(String(255), nullable=False)
+    original_filename = Column(String(255), nullable=False)
+    content_type = Column(String(100), nullable=False)
+    file_size = Column(Integer, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    user = relationship("User", back_populates="uploads")
+    tenant = relationship("Tenant", back_populates="uploads")

@@ -1,7 +1,12 @@
-from fastapi import FastAPI, Depends, HTTPException, Query
+import os
+import uuid
+import time
+from collections import defaultdict
+
+from fastapi import FastAPI, Depends, HTTPException, Query, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
-from typing import List, Optional
 
 from app import models, schemas, crud
 from app.db import engine, get_db
@@ -12,6 +17,38 @@ from app.security import create_access_token
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Blog Application API", version="1.0.0")
+
+# Upload configuration
+UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+ALLOWED_VIDEO_TYPES = {"video/mp4", "video/webm"}
+ALLOWED_TYPES = ALLOWED_IMAGE_TYPES | ALLOWED_VIDEO_TYPES
+MAX_FILE_SIZE = 500 * 1024 * 1024  # 500 MB
+MAX_STORAGE_PER_USER = 2 * 1024 * 1024 * 1024  # 2 GB per user
+CHUNK_SIZE = 1024 * 1024  # 1 MB chunks for streaming
+
+
+class UploadRateLimiter:
+    def __init__(self, max_uploads: int = 10, window_seconds: int = 60):
+        self.max_uploads = max_uploads
+        self.window_seconds = window_seconds
+        self._requests: dict[int, list[float]] = defaultdict(list)
+
+    def check(self, user_id: int) -> bool:
+        now = time.time()
+        window_start = now - self.window_seconds
+        self._requests[user_id] = [
+            t for t in self._requests[user_id] if t > window_start
+        ]
+        if len(self._requests[user_id]) >= self.max_uploads:
+            return False
+        self._requests[user_id].append(now)
+        return True
+
+
+upload_rate_limiter = UploadRateLimiter(max_uploads=10, window_seconds=60)
 
 # CORS Configuration
 app.add_middleware(
@@ -104,7 +141,6 @@ def format_blog_post(post: models.BlogPost, db: Session) -> dict:
         "author": post.author.username,
         "author_id": post.author_id,
         "date": post.created_at.strftime("%Y-%m-%d"),
-        "views": post.views,
         "comments": comments_count,
         "status": post.status.value,
         "created_at": post.created_at.isoformat(),
@@ -175,12 +211,9 @@ def get_post(
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
 
-    # Check if the current user owns this post
-    if post.author_id != current_user.id:
+    # Allow author to view any of their posts; other tenant members can only view published posts
+    if post.author_id != current_user.id and post.status != models.PostStatus.published:
         raise HTTPException(status_code=403, detail="Not authorized to view this post")
-
-    # Increment view count
-    crud.increment_post_views(db, post_id=post_id, tenant_id=current_user.tenant_id)
 
     return format_blog_post(post, db)
 
@@ -234,6 +267,19 @@ def delete_post(
     if existing_post.author_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to delete this post")
 
+    # Clean up uploaded files referenced in this post's content
+    filenames = crud.extract_upload_filenames(existing_post.content, current_user.tenant_id)
+    for filename in filenames:
+        file_path = os.path.join(UPLOAD_DIR, str(current_user.tenant_id), filename)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        upload = db.query(models.Upload).filter(
+            models.Upload.filename == filename,
+            models.Upload.tenant_id == current_user.tenant_id
+        ).first()
+        if upload:
+            db.delete(upload)
+
     crud.delete_post(db, post_id=post_id, tenant_id=current_user.tenant_id)
     return None
 
@@ -282,3 +328,98 @@ def create_comment(
 
     new_comment = crud.create_comment(db, comment=comment, user_id=current_user.id, tenant_id=current_user.tenant_id)
     return new_comment
+
+# File Upload Endpoint
+@app.post("/api/upload")
+async def upload_file(
+    file: UploadFile = File(...),
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Upload an image or video file. Returns the URL for embedding in post content.
+    Files are stored in tenant-scoped directories.
+    """
+    # Rate limiting
+    if not upload_rate_limiter.check(current_user.id):
+        raise HTTPException(status_code=429, detail="Too many uploads. Please wait before uploading again.")
+
+    # Validate MIME type
+    if file.content_type not in ALLOWED_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File type '{file.content_type}' not allowed. Allowed: JPEG, PNG, GIF, WebP, MP4, WebM."
+        )
+
+    # Check storage quota before writing
+    storage_used = crud.get_user_storage_used(db, user_id=current_user.id)
+    if storage_used >= MAX_STORAGE_PER_USER:
+        raise HTTPException(status_code=400, detail="Storage quota exceeded.")
+
+    # Create tenant-scoped directory
+    tenant_dir = os.path.join(UPLOAD_DIR, str(current_user.tenant_id))
+    os.makedirs(tenant_dir, exist_ok=True)
+
+    # Generate unique filename
+    ext = os.path.splitext(file.filename)[1] if file.filename else ""
+    unique_name = f"{uuid.uuid4().hex}{ext}"
+    file_path = os.path.join(tenant_dir, unique_name)
+
+    # Stream file to disk in chunks
+    total_size = 0
+    try:
+        with open(file_path, "wb") as f:
+            while chunk := await file.read(CHUNK_SIZE):
+                total_size += len(chunk)
+                if total_size > MAX_FILE_SIZE:
+                    break
+                f.write(chunk)
+
+        if total_size > MAX_FILE_SIZE:
+            os.remove(file_path)
+            raise HTTPException(
+                status_code=400,
+                detail=f"File too large. Maximum size is {MAX_FILE_SIZE // (1024 * 1024)} MB."
+            )
+    except HTTPException:
+        raise
+    except Exception:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        raise HTTPException(status_code=500, detail="File upload failed.")
+
+    # Check quota with actual file size
+    if storage_used + total_size > MAX_STORAGE_PER_USER:
+        os.remove(file_path)
+        raise HTTPException(status_code=400, detail="Storage quota exceeded. Upload would exceed your limit.")
+
+    # Record in database
+    crud.create_upload(
+        db,
+        filename=unique_name,
+        original_filename=file.filename or "unknown",
+        content_type=file.content_type,
+        file_size=total_size,
+        user_id=current_user.id,
+        tenant_id=current_user.tenant_id,
+    )
+
+    return {"url": f"/uploads/{current_user.tenant_id}/{unique_name}"}
+
+
+# Serve uploaded files with tenant isolation
+@app.get("/uploads/{tenant_id}/{filename}")
+async def serve_upload(
+    tenant_id: int,
+    filename: str,
+    current_user: models.User = Depends(get_current_user),
+):
+    """Serve uploaded files with tenant isolation."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    file_path = os.path.join(UPLOAD_DIR, str(tenant_id), filename)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+
+    return FileResponse(file_path)

@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import { dashboardApi } from '../services/dashboardAPI';
 import type { UpdatePostData } from '../services/dashboardAPI';
+import RichTextEditor from '../components/editor/RichTextEditor';
 
 const EditPost: React.FC = () => {
   const navigate = useNavigate();
@@ -63,7 +64,7 @@ const EditPost: React.FC = () => {
       setError('Title is required.');
       return;
     }
-    if (!formData.content?.trim()) {
+    if (!formData.content || formData.content === '<p></p>') {
       setError('Content is required.');
       return;
     }
@@ -124,15 +125,9 @@ const EditPost: React.FC = () => {
             placeholder="A short summary of your post (optional)"
           />
 
-          <TextField
-            label="Content"
-            name="content"
-            value={formData.content}
-            onChange={handleChange}
-            required
-            fullWidth
-            multiline
-            minRows={10}
+          <RichTextEditor
+            content={formData.content || ''}
+            onChange={(html) => setFormData((prev) => ({ ...prev, content: html }))}
           />
 
           <TextField
