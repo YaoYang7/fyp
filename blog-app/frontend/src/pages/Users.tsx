@@ -20,7 +20,7 @@ function Users() {
   const fetchUsers = async () => {
     try {
       setLoading(true)
-      const response = await axios.get('http://localhost:8000/api/users')
+      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'}/api/users`)
       setUsers(response.data)
       setError(null)
     } catch (err) {

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api`;
+const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'}/api`;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -54,6 +54,14 @@ export interface UpdatePostData {
   content?: string;
   summary?: string;
   status?: 'published' | 'draft';
+}
+
+export interface GroupUser {
+  id: number;
+  username: string;
+  email: string;
+  created_at: string;
+  published_posts: number;
 }
 
 export const dashboardApi = {
@@ -131,6 +139,12 @@ export const dashboardApi = {
     const response = await api.get('/posts/search', {
       params: { q: query },
     });
+    return response.data;
+  },
+
+  // Get all users in the same group (tenant)
+  getGroupUsers: async (): Promise<GroupUser[]> => {
+    const response = await api.get('/users');
     return response.data;
   },
 };

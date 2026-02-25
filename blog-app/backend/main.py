@@ -51,9 +51,12 @@ class UploadRateLimiter:
 upload_rate_limiter = UploadRateLimiter(max_uploads=10, window_seconds=60)
 
 # CORS Configuration
+_cors_raw = os.getenv("CORS_ORIGINS", "http://localhost:5173")
+cors_origins = [origin.strip() for origin in _cors_raw.split(",")]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins (development only!)
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -62,6 +65,28 @@ app.add_middleware(
 @app.get("/")
 def read_root():
     return {"message": "Blog Application API is running"}
+
+# Group Users Endpoint
+@app.get("/api/users")
+def get_group_users(
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all users in the current user's group (tenant)
+    """
+    users = crud.get_users(db, tenant_id=current_user.tenant_id)
+    published_counts = crud.get_published_post_counts(db, tenant_id=current_user.tenant_id)
+    return [
+        {
+            "id": u.id,
+            "username": u.username,
+            "email": u.email,
+            "created_at": u.created_at.isoformat(),
+            "published_posts": published_counts.get(u.id, 0),
+        }
+        for u in users
+    ]
 
 # User Authentication Endpoints
 @app.post("/user_api/register", response_model=schemas.User, status_code=201)
