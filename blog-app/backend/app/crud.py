@@ -194,6 +194,20 @@ def delete_comment(db: Session, comment_id: int, tenant_id: int):
     return True
 
 
+def get_published_post_counts(db: Session, tenant_id: int) -> dict:
+    """Return a dict of {user_id: published_post_count} for all users in a tenant."""
+    rows = (
+        db.query(models.BlogPost.author_id, func.count(models.BlogPost.id))
+        .filter(
+            models.BlogPost.tenant_id == tenant_id,
+            models.BlogPost.status == models.PostStatus.published,
+        )
+        .group_by(models.BlogPost.author_id)
+        .all()
+    )
+    return {author_id: count for author_id, count in rows}
+
+
 # Dashboard Statistics
 def get_dashboard_stats(db: Session, user_id: int, tenant_id: int):
     total_posts = db.query(func.count(models.BlogPost.id)).filter(

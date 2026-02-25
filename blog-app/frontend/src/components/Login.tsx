@@ -25,7 +25,7 @@ const Login: React.FC<LoginProps> = (props) => {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:8000/user_api/login", {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'}/user_api/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -1,3 +1,6 @@
+# Secrets
+.env
+
 # Python
 __pycache__/
 *.py[cod]
@@ -5,7 +8,6 @@ __pycache__/
 *.so
 venv/
 env/
-.env
 *.db
 *.sqlite3
 
@@ -41,4 +43,4 @@ lerna-debug.log*
 Thumbs.db
 
 # Uploads
-backend/uploads/
+blog-app/backend/uploads/

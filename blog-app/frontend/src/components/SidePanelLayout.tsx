@@ -29,10 +29,35 @@ const navigationItems = [
   { label: 'Create New Post', path: '/create_post', requiresAuth: true },
   { label: 'Manage Posts', path: '/manage_blog', requiresAuth: true },
   { label: 'Group Posts', path: '/feed', requiresAuth: true },
+  { label: 'Group Users', path: '/group_users', requiresAuth: true },
   { label: 'Account Info', path: '/account_info', requiresAuth: true },
   { label: 'Register', path: '/home?view=register', requiresAuth: false, authOnly: false },
   { label: 'Login', path: '/home?view=login', requiresAuth: false, authOnly: false },
 ] as const;
+
+const PAGE_TITLES: Record<string, string> = {
+  '/dashboard': 'Dashboard',
+  '/create_post': 'Create Post',
+  '/manage_blog': 'Manage Posts',
+  '/feed': 'Group Posts',
+  '/group_users': 'Group Users',
+  '/account_info': 'Account Info',
+};
+
+const getPageTitle = (pathname: string, search: string): string => {
+  switch (true) {
+    case pathname.startsWith('/edit_post'): 
+      return 'Edit Post';
+    case !!PAGE_TITLES[pathname]:           
+      return PAGE_TITLES[pathname];
+    case search === '?view=login':          
+      return 'Login';
+    case search === '?view=register':       
+      return 'Register';
+    default:                                
+      return 'Blog Application / Platform';
+  }
+};
 
 interface SidePanelLayoutProps {
   children: React.ReactNode;
@@ -78,23 +103,7 @@ const SidePanelLayout: React.FC<SidePanelLayoutProps> = ({ children }) => {
       <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
         <Toolbar>
           <Typography variant="h6" sx={{ flexGrow: 1, textAlign: 'center' }}>
-            {location.pathname === '/dashboard'
-              ? 'Dashboard'
-              : location.pathname === '/create_post'
-                ? 'Create Post'
-                : location.pathname === '/manage_blog'
-                  ? 'Manage Posts'
-                  : location.pathname.startsWith('/edit_post')
-                    ? 'Edit Post'
-                    : location.pathname === '/feed'
-                      ? 'Group Posts'
-                      : location.pathname === '/account_info'
-                      ? 'Account Info'
-                      : location.search === '?view=login'
-                        ? 'Login'
-                        : location.search === '?view=register'
-                          ? 'Register'
-                          : 'Blog Application / Platform'}
+            {getPageTitle(location.pathname, location.search)}
           </Typography>
           <Tooltip title={mode === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}>
             <IconButton color="inherit" onClick={toggleTheme}>
@@ -149,7 +158,7 @@ const SidePanelLayout: React.FC<SidePanelLayoutProps> = ({ children }) => {
 
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
         <Toolbar />
-        {children}  
+        {children}
       </Box>
     </Box>
   );

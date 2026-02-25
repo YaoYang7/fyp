@@ -45,7 +45,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange }) =>
       if (!editor) return;
       try {
         const { url } = await dashboardApi.uploadFile(file);
-        const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+        const backendUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000';
         const fullUrl = `${backendUrl}${url}`;
         if (type === 'image') {
           editor.chain().focus().setImage({ src: fullUrl }).run();
