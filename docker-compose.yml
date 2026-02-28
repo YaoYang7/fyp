@@ -10,7 +10,7 @@ services:
       POSTGRES_USER: bloguser
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
     networks:
       - blog_net
     healthcheck:
