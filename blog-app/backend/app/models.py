@@ -57,7 +57,7 @@ class BlogPost(Base):
     summary = Column(Text)
     author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
-    status = Column(Enum(PostStatus), default=PostStatus.draft, nullable=False)
+    status = Column(Enum(PostStatus, native_enum=False), default=PostStatus.draft, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
