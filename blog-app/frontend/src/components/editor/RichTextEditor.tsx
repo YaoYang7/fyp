@@ -27,6 +27,14 @@ interface RichTextEditorProps {
   onChange: (html: string) => void;
 }
 
+const injectToken = (html: string) => {
+  const token = localStorage.getItem('authToken') ?? '';
+  return html.replace(
+    /src="(\/uploads\/[^?"]+)(?:\?[^"]*)?"/g,
+    `src="$1?token=${token}"`
+  );
+};
+
 const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange }) => {
   const editor = useEditor({
     extensions: [
@@ -34,7 +42,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange }) =>
       Image.configure({ inline: false, allowBase64: false }),
       Video,
     ],
-    content,
+    content: injectToken(content),
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
     },
@@ -46,7 +54,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange }) =>
       try {
         const { url } = await dashboardApi.uploadFile(file);
         const backendUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000';
-        const fullUrl = `${backendUrl}${url}`;
+        const token = localStorage.getItem('authToken') ?? '';
+        const fullUrl = `${backendUrl}${url}?token=${token}`;
         if (type === 'image') {
           editor.chain().focus().setImage({ src: fullUrl }).run();
         } else {

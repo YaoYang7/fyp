@@ -7,7 +7,12 @@ interface SafeHTMLProps {
 }
 
 const SafeHTML: React.FC<SafeHTMLProps> = ({ html, className }) => {
-  const clean = DOMPurify.sanitize(html, {
+  const token = localStorage.getItem('authToken') ?? '';
+  const htmlWithTokens = html.replace(
+    /src="(\/uploads\/[^?"]+)(?:\?[^"]*)?"/g,
+    `src="$1?token=${token}"`
+  );
+  const clean = DOMPurify.sanitize(htmlWithTokens, {
     ALLOWED_TAGS: [
       'p', 'br', 'strong', 'em', 'u', 's', 'h1', 'h2', 'h3', 'h4',
       'ul', 'ol', 'li', 'blockquote', 'pre', 'code', 'a', 'img', 'video',
