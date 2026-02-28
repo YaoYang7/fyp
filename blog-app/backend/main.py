@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app import models, schemas, crud
 from app.db import engine, get_db
 from app.auth import get_current_user
-from app.security import create_access_token
+from app.security import create_access_token, verify_token
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
@@ -437,10 +437,14 @@ async def upload_file(
 async def serve_upload(
     tenant_id: int,
     filename: str,
-    current_user: models.User = Depends(get_current_user),
+    token: str = Query(...),
 ):
-    """Serve uploaded files with tenant isolation."""
-    if current_user.tenant_id != tenant_id:
+    """Serve uploaded files with auth and tenant isolation via query-param token."""
+    payload = verify_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    if int(payload.get("tenant_id", -1)) != tenant_id:
         raise HTTPException(status_code=403, detail="Access denied")
 
     file_path = os.path.join(UPLOAD_DIR, str(tenant_id), filename)
