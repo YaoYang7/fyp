@@ -9,15 +9,9 @@ from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app import models, schemas, crud
-from app.db import engine, get_db
+from app.db import get_db
 from app.auth import get_current_user
 from app.security import create_access_token, verify_token
-
-# Create database tables (guarded against race condition with multiple workers)
-try:
-    models.Base.metadata.create_all(bind=engine)
-except Exception:
-    pass
 
 app = FastAPI(title="Blog Application API", version="1.0.0")
 
