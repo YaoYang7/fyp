@@ -3,7 +3,7 @@ import uuid
 import time
 from collections import defaultdict
 
-from fastapi import FastAPI, Depends, HTTPException, Query, UploadFile, File
+from fastapi import FastAPI, Depends, HTTPException, Query, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
@@ -14,6 +14,8 @@ from app.auth import get_current_user
 from app.security import create_access_token, verify_token
 
 app = FastAPI(title="Blog Application API", version="1.0.0")
+
+INSTANCE_ID = os.getenv("INSTANCE_ID", "backend-unknown")
 
 # Upload configuration
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
@@ -58,6 +60,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def add_instance_header(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Backend-Instance"] = INSTANCE_ID
+    return response
 
 @app.get("/")
 def read_root():
