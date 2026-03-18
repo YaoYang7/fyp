@@ -18,11 +18,16 @@ from app.security import create_access_token, verify_token
 
 app = FastAPI(title="Blog Application API", version="1.0.0")
 
-# GCS configuration
+# GCS configuration (lazy — initialised on first request, not at import time)
 GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME")
-_gcs_client = gcs.Client()
-_gcs_bucket = _gcs_client.bucket(GCS_BUCKET_NAME)
 SIGNED_URL_EXPIRY_SECONDS = 3600
+_gcs_bucket = None
+
+def _get_bucket():
+    global _gcs_bucket
+    if _gcs_bucket is None:
+        _gcs_bucket = gcs.Client().bucket(GCS_BUCKET_NAME)
+    return _gcs_bucket
 
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 ALLOWED_VIDEO_TYPES = {"video/mp4", "video/webm"}
@@ -297,7 +302,7 @@ def delete_post(
     # Clean up uploaded files referenced in this post's content
     filenames = crud.extract_upload_filenames(existing_post.content, current_user.tenant_id)
     for filename in filenames:
-        blob = _gcs_bucket.blob(f"{current_user.tenant_id}/{filename}")
+        blob = _get_bucket().blob(f"{current_user.tenant_id}/{filename}")
         if blob.exists():
             blob.delete()
         upload = db.query(models.Upload).filter(
@@ -406,7 +411,7 @@ async def upload_file(
     # Upload to GCS
     try:
         buffer.seek(0)
-        blob = _gcs_bucket.blob(f"{current_user.tenant_id}/{unique_name}")
+        blob = _get_bucket().blob(f"{current_user.tenant_id}/{unique_name}")
         blob.upload_from_file(buffer, content_type=file.content_type)
     except Exception:
         raise HTTPException(status_code=500, detail="File upload failed.")
@@ -440,7 +445,7 @@ async def serve_upload(
     if int(payload.get("tenant_id", -1)) != tenant_id:
         raise HTTPException(status_code=403, detail="Access denied")
 
-    blob = _gcs_bucket.blob(f"{tenant_id}/{filename}")
+    blob = _get_bucket().blob(f"{tenant_id}/{filename}")
     if not blob.exists():
         raise HTTPException(status_code=404, detail="File not found")
 
