@@ -1,11 +1,14 @@
+import io
 import os
 import uuid
 import time
 from collections import defaultdict
+from datetime import timedelta
 
 from fastapi import FastAPI, Depends, HTTPException, Query, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import RedirectResponse
+from google.cloud import storage as gcs
 from sqlalchemy.orm import Session
 
 from app import models, schemas, crud
@@ -15,9 +18,11 @@ from app.security import create_access_token, verify_token
 
 app = FastAPI(title="Blog Application API", version="1.0.0")
 
-# Upload configuration
-UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+# GCS configuration
+GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME")
+_gcs_client = gcs.Client()
+_gcs_bucket = _gcs_client.bucket(GCS_BUCKET_NAME)
+SIGNED_URL_EXPIRY_SECONDS = 3600
 
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 ALLOWED_VIDEO_TYPES = {"video/mp4", "video/webm"}
@@ -292,9 +297,9 @@ def delete_post(
     # Clean up uploaded files referenced in this post's content
     filenames = crud.extract_upload_filenames(existing_post.content, current_user.tenant_id)
     for filename in filenames:
-        file_path = os.path.join(UPLOAD_DIR, str(current_user.tenant_id), filename)
-        if os.path.exists(file_path):
-            os.remove(file_path)
+        blob = _gcs_bucket.blob(f"{current_user.tenant_id}/{filename}")
+        if blob.exists():
+            blob.delete()
         upload = db.query(models.Upload).filter(
             models.Upload.filename == filename,
             models.Upload.tenant_id == current_user.tenant_id
@@ -378,42 +383,33 @@ async def upload_file(
     if storage_used >= MAX_STORAGE_PER_USER:
         raise HTTPException(status_code=400, detail="Storage quota exceeded.")
 
-    # Create tenant-scoped directory
-    tenant_dir = os.path.join(UPLOAD_DIR, str(current_user.tenant_id))
-    os.makedirs(tenant_dir, exist_ok=True)
-
     # Generate unique filename
     ext = os.path.splitext(file.filename)[1] if file.filename else ""
     unique_name = f"{uuid.uuid4().hex}{ext}"
-    file_path = os.path.join(tenant_dir, unique_name)
 
-    # Stream file to disk in chunks
+    # Stream file into memory buffer, enforcing size limit
     total_size = 0
-    try:
-        with open(file_path, "wb") as f:
-            while chunk := await file.read(CHUNK_SIZE):
-                total_size += len(chunk)
-                if total_size > MAX_FILE_SIZE:
-                    break
-                f.write(chunk)
-
+    buffer = io.BytesIO()
+    while chunk := await file.read(CHUNK_SIZE):
+        total_size += len(chunk)
         if total_size > MAX_FILE_SIZE:
-            os.remove(file_path)
             raise HTTPException(
                 status_code=400,
                 detail=f"File too large. Maximum size is {MAX_FILE_SIZE // (1024 * 1024)} MB."
             )
-    except HTTPException:
-        raise
-    except Exception:
-        if os.path.exists(file_path):
-            os.remove(file_path)
-        raise HTTPException(status_code=500, detail="File upload failed.")
+        buffer.write(chunk)
 
     # Check quota with actual file size
     if storage_used + total_size > MAX_STORAGE_PER_USER:
-        os.remove(file_path)
         raise HTTPException(status_code=400, detail="Storage quota exceeded. Upload would exceed your limit.")
+
+    # Upload to GCS
+    try:
+        buffer.seek(0)
+        blob = _gcs_bucket.blob(f"{current_user.tenant_id}/{unique_name}")
+        blob.upload_from_file(buffer, content_type=file.content_type)
+    except Exception:
+        raise HTTPException(status_code=500, detail="File upload failed.")
 
     # Record in database
     crud.create_upload(
@@ -444,8 +440,13 @@ async def serve_upload(
     if int(payload.get("tenant_id", -1)) != tenant_id:
         raise HTTPException(status_code=403, detail="Access denied")
 
-    file_path = os.path.join(UPLOAD_DIR, str(tenant_id), filename)
-    if not os.path.exists(file_path):
+    blob = _gcs_bucket.blob(f"{tenant_id}/{filename}")
+    if not blob.exists():
         raise HTTPException(status_code=404, detail="File not found")
 
-    return FileResponse(file_path)
+    signed_url = blob.generate_signed_url(
+        version="v4",
+        expiration=timedelta(seconds=SIGNED_URL_EXPIRY_SECONDS),
+        method="GET",
+    )
+    return RedirectResponse(url=signed_url)

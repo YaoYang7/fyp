@@ -9,4 +9,4 @@ models.Base.metadata.create_all(bind=engine)
 print('Database tables ready.')
 "
 
-exec uvicorn main:app --host 0.0.0.0 --port 8000 --workers 2
+exec uvicorn main:app --host 0.0.0.0 --port "${PORT:-8000}" --workers 1
