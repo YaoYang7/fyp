@@ -20,12 +20,14 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
+    dos2unix \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /install /usr/local
 COPY . .
 
-RUN chmod +x /app/docker-entrypoint.sh \
+RUN dos2unix /app/docker-entrypoint.sh \
+    && chmod +x /app/docker-entrypoint.sh \
     && adduser --disabled-password --gecos "" appuser \
     && chown -R appuser:appuser /app
 
