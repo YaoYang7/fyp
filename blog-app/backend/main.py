@@ -413,7 +413,10 @@ async def upload_file(
         buffer.seek(0)
         blob = _get_bucket().blob(f"{current_user.tenant_id}/{unique_name}")
         blob.upload_from_file(buffer, content_type=file.content_type)
-    except Exception:
+    except Exception as e:
+        import traceback
+        print(f"GCS upload error: {e}", flush=True)
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail="File upload failed.")
 
     # Record in database
