@@ -5,6 +5,8 @@ import time
 from collections import defaultdict
 from datetime import timedelta
 
+import google.auth
+import google.auth.transport.requests
 from fastapi import FastAPI, Depends, HTTPException, Query, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
@@ -452,9 +454,15 @@ async def serve_upload(
     if not blob.exists():
         raise HTTPException(status_code=404, detail="File not found")
 
+    credentials, _ = google.auth.default()
+    google.auth.transport.requests.Request().session  # ensure transport is available
+    auth_req = google.auth.transport.requests.Request()
+    credentials.refresh(auth_req)
     signed_url = blob.generate_signed_url(
         version="v4",
         expiration=timedelta(seconds=SIGNED_URL_EXPIRY_SECONDS),
         method="GET",
+        service_account_email=credentials.service_account_email,
+        access_token=credentials.token,
     )
     return RedirectResponse(url=signed_url)
