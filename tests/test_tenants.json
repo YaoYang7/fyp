@@ -1,0 +1,22 @@
+{
+  "light_a_kcub": {
+    "username": "user_qeuyzt",
+    "tenant_id": 66,
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NiIsInRlbmFudF9pZCI6NjYsImV4cCI6MTc3MzI2NjQzNH0._ou0aIvBc9S6EV8KSaZegv35vXKkxCyxCXI5wiqiUO8"
+  },
+  "light_b_kcub": {
+    "username": "user_wpxbtt",
+    "tenant_id": 67,
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NyIsInRlbmFudF9pZCI6NjcsImV4cCI6MTc3MzI2NjQzNX0.m0uTRM32_bjoXFIyOSewOgcNXiV1HwgeX6uSfp5P6BE"
+  },
+  "medium_c_kcub": {
+    "username": "user_kjegdl",
+    "tenant_id": 68,
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OCIsInRlbmFudF9pZCI6NjgsImV4cCI6MTc3MzI2NjQzNX0.zsilqDroID6dhjFE-UX1-EDR-iCIDVG04KQkGv-bGm0"
+  },
+  "heavy_d_kcub": {
+    "username": "user_mpsthj",
+    "tenant_id": 69,
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OSIsInRlbmFudF9pZCI6NjksImV4cCI6MTc3MzI2NjQzNX0.C0SIIh4aLPg_goqTieFabzzki-ULkPVd6Gt8LMYgFGY"
+  }
+}

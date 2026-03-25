@@ -1,17 +1,29 @@
 import os
 import uuid
 import time
+import threading
 from collections import defaultdict
 
 from fastapi import FastAPI, Depends, HTTPException, Query, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from jose import jwt as _jwt, JWTError as _JWTError
+from sqlalchemy import text as _text
 from sqlalchemy.orm import Session
 
 from app import models, schemas, crud
-from app.db import get_db
+from app.db import get_db, SessionLocal as _SessionLocal
 from app.auth import get_current_user
 from app.security import create_access_token, verify_token
+
+# ---------------------------------------------------------------------------
+# Per-tenant metrics collection
+# ---------------------------------------------------------------------------
+_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+
+# Thread-safe in-memory buffer: {tenant_id: {"cpu_ms": [...], "bytes_out": [...]}}
+_metrics_lock = threading.Lock()
+_metrics_buf: dict = defaultdict(lambda: {"cpu_ms": [], "bytes_out": []})
 
 app = FastAPI(title="Blog Application API", version="1.0.0")
 
@@ -66,6 +78,84 @@ async def add_instance_header(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-Backend-Instance"] = INSTANCE_ID
     return response
+
+
+@app.middleware("http")
+async def tenant_metrics_middleware(request: Request, call_next):
+    """
+    Measure per-tenant CPU time (request duration) and bandwidth (response bytes).
+    Samples are buffered in memory and flushed to tenant_metrics every 30s.
+    JWT is decoded here only to extract tenant_id — no DB hit, no auth side-effects.
+    """
+    t0 = time.monotonic()
+    response = await call_next(request)
+    duration_ms = (time.monotonic() - t0) * 1000
+
+    tenant_id = None
+    auth = request.headers.get("Authorization", "")
+    token = auth[7:] if auth.startswith("Bearer ") else request.query_params.get("token")
+    if token and _SECRET_KEY:
+        try:
+            payload = _jwt.decode(token, _SECRET_KEY, algorithms=["HS256"])
+            tid = payload.get("tenant_id")
+            if tid is not None:
+                tenant_id = int(tid)
+        except (_JWTError, ValueError, TypeError):
+            pass
+
+    if tenant_id is not None and tenant_id >= 0:
+        bytes_out = int(response.headers.get("content-length", 0))
+        with _metrics_lock:
+            _metrics_buf[tenant_id]["cpu_ms"].append(duration_ms)
+            _metrics_buf[tenant_id]["bytes_out"].append(bytes_out)
+
+    return response
+
+
+def _flush_metrics():
+    """
+    Background daemon thread: every 30s, flush buffered per-tenant samples to
+    the tenant_metrics table using an exponential moving average (alpha=0.3) so
+    recent activity is weighted without short spikes dominating the score.
+    """
+    EMA_ALPHA = 0.3
+    FLUSH_INTERVAL = 30
+    time.sleep(15)  # wait for DB tables to be created on first startup
+    while True:
+        time.sleep(FLUSH_INTERVAL)
+        with _metrics_lock:
+            snapshot = dict(_metrics_buf)
+            _metrics_buf.clear()
+        if not snapshot:
+            continue
+        db = _SessionLocal()
+        try:
+            for tid, samples in snapshot.items():
+                if not samples["cpu_ms"]:
+                    continue
+                new_cpu = sum(samples["cpu_ms"]) / len(samples["cpu_ms"])
+                new_bw  = sum(samples["bytes_out"]) / len(samples["bytes_out"])
+                n       = len(samples["cpu_ms"])
+                db.execute(_text("""
+                    INSERT INTO tenant_metrics
+                        (tenant_id, avg_cpu_ms, avg_bytes_out, request_count, updated_at)
+                    VALUES (:t, :c, :b, :n, NOW())
+                    ON CONFLICT (tenant_id) DO UPDATE SET
+                        avg_cpu_ms    = tenant_metrics.avg_cpu_ms    * (1 - :a) + EXCLUDED.avg_cpu_ms    * :a,
+                        avg_bytes_out = tenant_metrics.avg_bytes_out * (1 - :a) + EXCLUDED.avg_bytes_out * :a,
+                        request_count = tenant_metrics.request_count + EXCLUDED.request_count,
+                        updated_at    = NOW()
+                """), {"t": tid, "c": new_cpu, "b": int(new_bw), "n": n, "a": EMA_ALPHA})
+            db.commit()
+        except Exception as e:
+            print(f"[METRICS] Flush error: {e}")
+            db.rollback()
+        finally:
+            db.close()
+
+
+threading.Thread(target=_flush_metrics, daemon=True).start()
+
 
 @app.get("/")
 def read_root():

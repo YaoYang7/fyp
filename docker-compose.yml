@@ -19,8 +19,8 @@ services:
       timeout: 5s
       retries: 5
 
-  # Lightweight backend — simulates a small VM (0.5 CPU, 512 MB, 1 worker)
-  lightweight-backend:
+  # VM 1 — medium VM (1.0 CPU, 1 GB RAM, 2 workers)
+  vm1:
     build:
       context: ./blog-app/backend
       dockerfile: Dockerfile
@@ -33,19 +33,19 @@ services:
       DATABASE_URL: postgresql://bloguser:${POSTGRES_PASSWORD}@postgres:5432/blogdb
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
-      INSTANCE_ID: lightweight-backend
-      UVICORN_WORKERS: "1"
+      INSTANCE_ID: vm1
+      UVICORN_WORKERS: "2"
     volumes:
       - uploads_data:/app/uploads
     networks:
       blog_net:
         aliases:
-          - backend                     # Docker DNS alias Nginx resolves
+          - backend                     # Docker DNS alias kept for burst container compatibility
     deploy:
       resources:
         limits:
-          cpus: '0.50'
-          memory: 512M
+          cpus: '1.00'
+          memory: 1024M
     healthcheck:
       test: ["CMD", "python", "-c",
              "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
@@ -54,21 +54,21 @@ services:
       start_period: 15s
       retries: 3
 
-  # Heavyweight backend — simulates a large VM (1.5 CPU, 1.5 GB, 4 workers)
-  heavyweight-backend:
-    image: blog-backend:latest          # reuses the image built above — no duplicate build
+  # VM 2 — medium VM (1.0 CPU, 1 GB RAM, 2 workers)
+  vm2:
+    image: blog-backend:latest          # reuses the image built by vm1 — no duplicate build
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
-      lightweight-backend:
+      vm1:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://bloguser:${POSTGRES_PASSWORD}@postgres:5432/blogdb
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
-      INSTANCE_ID: heavyweight-backend
-      UVICORN_WORKERS: "4"
+      INSTANCE_ID: vm2
+      UVICORN_WORKERS: "2"
     volumes:
       - uploads_data:/app/uploads
     networks:
@@ -78,14 +78,36 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.50'
-          memory: 1536M
+          cpus: '1.00'
+          memory: 1024M
     healthcheck:
       test: ["CMD", "python", "-c",
              "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
       interval: 30s
       timeout: 5s
       start_period: 15s
+      retries: 3
+
+  # Router — tenant-aware routing service used by Nginx auth_request
+  router:
+    build:
+      context: ./blog-app/router
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://bloguser:${POSTGRES_PASSWORD}@postgres:5432/blogdb
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      DEFAULT_BACKEND: "vm1:8000"
+    networks:
+      - blog_net
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 15s
+      timeout: 3s
       retries: 3
 
   # Autoscaler — monitors CPU and spawns/removes burst containers automatically
@@ -95,12 +117,17 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
-      lightweight-backend:
+      vm1:
         condition: service_healthy
-      heavyweight-backend:
+      vm2:
+        condition: service_healthy
+      router:
         condition: service_healthy
     environment:
       CPU_THRESHOLD: "70"
+      MEM_THRESHOLD: "80"
+      BW_THRESHOLD: "50"
+      DISK_IO_THRESHOLD: "50"
       SCALE_DOWN_THRESHOLD: "30"
       SCALE_DOWN_COOLDOWN: "60"
       CHECK_INTERVAL: "10"
@@ -111,6 +138,10 @@ services:
       DATABASE_URL: postgresql://bloguser:${POSTGRES_PASSWORD}@postgres:5432/blogdb
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
+      ROUTER_URL: "http://router:8080"
+      PROFILE_CHECK_INTERVAL: "120"
+      TENANT_CPU_HEAVY: "80"
+      SEPARATION_INTERVAL: "30"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock   # Docker API access
     networks:
@@ -132,12 +163,14 @@ services:
     image: nginx:alpine
     restart: unless-stopped
     depends_on:
-      lightweight-backend:
+      vm1:
         condition: service_healthy
-      heavyweight-backend:
+      vm2:
         condition: service_healthy
       frontend:
         condition: service_started
+      router:
+        condition: service_healthy
     ports:
       - "80:80"
     volumes:

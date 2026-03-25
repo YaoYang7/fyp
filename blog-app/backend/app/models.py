@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, Enum, UniqueConstraint
+from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, Enum, UniqueConstraint, Boolean, Float, BigInteger
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from .db import Base
@@ -99,3 +99,33 @@ class Upload(Base):
     # Relationships
     user = relationship("User", back_populates="uploads")
     tenant = relationship("Tenant", back_populates="uploads")
+
+
+class TenantResourceProfile(Base):
+    __tablename__ = "tenant_resource_profiles"
+
+    tenant_id    = Column(Integer, ForeignKey("tenants.id"), primary_key=True)
+    ram_class    = Column(String(10), nullable=False, default="small")
+    # "small"=64MB, "medium"=128MB, "large"=256MB
+    footprint_mb = Column(Integer, nullable=False, default=64)
+    updated_at   = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class TenantPlacement(Base):
+    __tablename__ = "tenant_placements"
+
+    tenant_id    = Column(Integer, ForeignKey("tenants.id"), primary_key=True)
+    backend_name = Column(String(100), nullable=False)   # e.g. "vm1"
+    backend_host = Column(String(200), nullable=False)   # e.g. "vm1:8000"
+    assigned_at  = Column(DateTime(timezone=True), server_default=func.now())
+    is_active    = Column(Boolean, nullable=False, default=True)
+
+
+class TenantMetrics(Base):
+    __tablename__ = "tenant_metrics"
+
+    tenant_id     = Column(Integer, ForeignKey("tenants.id"), primary_key=True)
+    avg_cpu_ms    = Column(Float, nullable=False, default=0.0)    # EMA of request processing time
+    avg_bytes_out = Column(BigInteger, nullable=False, default=0)  # EMA of response bytes per request
+    request_count = Column(BigInteger, nullable=False, default=0)  # cumulative requests tracked
+    updated_at    = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
