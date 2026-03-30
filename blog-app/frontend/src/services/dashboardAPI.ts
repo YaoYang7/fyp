@@ -42,6 +42,16 @@ export interface DashboardStats {
   totalComments: number;
 }
 
+export interface Comment {
+  id: number;
+  content: string;
+  author: string;
+  author_id: number;
+  post_id: number;
+  created_at: string;
+  updated_at?: string;
+}
+
 export interface CreatePostData {
   title: string;
   content: string;
@@ -117,9 +127,23 @@ export const dashboardApi = {
   },
 
   // Get comments for a specific post
-  getPostComments: async (postId: number): Promise<any[]> => {
+  getPostComments: async (postId: number): Promise<Comment[]> => {
     const response = await api.get(`/posts/${postId}/comments`);
     return response.data;
+  },
+
+  // Create a new comment on a post
+  createComment: async (postId: number, content: string): Promise<Comment> => {
+    const response = await api.post(`/posts/${postId}/comments`, {
+      content,
+      post_id: postId,
+    });
+    return response.data;
+  },
+
+  // Delete a comment
+  deleteComment: async (postId: number, commentId: number): Promise<void> => {
+    await api.delete(`/posts/${postId}/comments/${commentId}`);
   },
 
   // Upload a file (image or video)
