@@ -1,0 +1,15 @@
+export const VARIANT_OUTLINED = 'outlined' as const;
+export const VARIANT_TEXT = 'text' as const;
+export const VARIANT_CONTAINED = 'contained' as const;
+export const VARIANT_H4 = 'h4' as const;
+export const VARIANT_H6 = 'h6' as const;
+export const VARIANT_BODY2 = 'body2' as const;
+export const VARIANT_SUBTITLE1 = 'subtitle1' as const;
+export const VARIANT_SUBTITLE2 = 'subtitle2' as const;
+export const VARIANT_CAPTION = 'caption' as const;
+export const COLOR_TEXT_SECONDARY = 'text.secondary' as const;
+export const COLOR_SUCCESS = 'success' as const;
+export const COLOR_ACTION = 'action' as const;
+export const COLOR_ERROR = 'error' as const;
+export const COLOR_PRIMARY_MAIN = 'primary.main';
+export const SIZE_SMALL = 'small' as const;
