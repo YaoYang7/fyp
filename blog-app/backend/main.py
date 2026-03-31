@@ -181,6 +181,21 @@ def format_blog_post(post: models.BlogPost, db: Session) -> dict:
         "updated_at": post.updated_at.isoformat() if post.updated_at else None
     }
 
+# Helper function to format comment for frontend
+def format_comment(comment: models.Comment) -> dict:
+    """
+    Format a Comment model to match the frontend Comment interface
+    """
+    return {
+        "id": comment.id,
+        "content": comment.content,
+        "author": comment.author.username,
+        "author_id": comment.author_id,
+        "post_id": comment.post_id,
+        "created_at": comment.created_at.isoformat(),
+        "updated_at": comment.updated_at.isoformat() if comment.updated_at else None,
+    }
+
 # Dashboard Endpoints
 @app.get("/api/dashboard/stats", response_model=schemas.DashboardStats)
 def get_dashboard_stats(
@@ -344,7 +359,7 @@ def get_post_comments(
         raise HTTPException(status_code=404, detail="Post not found")
 
     comments = crud.get_post_comments(db, post_id=post_id, tenant_id=current_user.tenant_id)
-    return comments
+    return [format_comment(c) for c in comments]
 
 @app.post("/api/posts/{post_id}/comments", status_code=201)
 def create_comment(
@@ -361,7 +376,30 @@ def create_comment(
         raise HTTPException(status_code=404, detail="Post not found")
 
     new_comment = crud.create_comment(db, comment=comment, user_id=current_user.id, tenant_id=current_user.tenant_id)
-    return new_comment
+    return format_comment(new_comment)
+
+@app.delete("/api/posts/{post_id}/comments/{comment_id}", status_code=204)
+def delete_comment(
+    post_id: int,
+    comment_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a comment. Only the comment author can delete their own comment.
+    """
+    comment = crud.get_comment(db, comment_id=comment_id, tenant_id=current_user.tenant_id)
+    if not comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+
+    if comment.post_id != post_id:
+        raise HTTPException(status_code=404, detail="Comment not found")
+
+    if comment.author_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this comment")
+
+    crud.delete_comment(db, comment_id=comment_id, tenant_id=current_user.tenant_id)
+    return None
 
 # File Upload Endpoint
 @app.post("/api/upload")
