@@ -12,6 +12,8 @@ import EditPost from "./pages/EditPost";
 import GroupBlogFeeds from "./pages/GroupBlogFeeds";
 import GroupUsersPage from "./pages/GroupUsersPage";
 import ViewPost from "./pages/ViewPost";
+import PublicFeed from "./pages/PublicFeed";
+import PublicViewPost from "./pages/PublicViewPost";
 
 function App() {
   return (
@@ -19,7 +21,9 @@ function App() {
       <BrowserRouter>
         <SidePanelLayout>
           <Routes>
-            <Route path="/" element={<Navigate to="/home" replace />} />
+            <Route path="/" element={<Navigate to="/explore" replace />} />
+            <Route path="/explore" element={<PublicFeed />} />
+            <Route path="/explore/post/:id" element={<PublicViewPost />} />
             <Route
               path="/home"
               element={

@@ -2,6 +2,7 @@ import os
 import uuid
 import time
 from collections import defaultdict
+from typing import Optional
 
 from fastapi import FastAPI, Depends, HTTPException, Query, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
@@ -183,6 +184,40 @@ def format_comment(comment: models.Comment) -> dict:
         "created_at": comment.created_at.isoformat(),
         "updated_at": comment.updated_at.isoformat() if comment.updated_at else None,
     }
+
+# Public Endpoints (no auth required)
+@app.get("/api/public/tenants")
+def get_public_tenants(db: Session = Depends(get_db)):
+    tenants = db.query(models.Tenant).order_by(models.Tenant.name).all()
+    return [{"id": t.id, "name": t.name, "slug": t.slug} for t in tenants]
+
+@app.get("/api/public/posts")
+def get_public_posts(
+    tenant_id: Optional[int] = Query(default=None),
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=100),
+    db: Session = Depends(get_db)
+):
+    query = db.query(models.BlogPost).filter(
+        models.BlogPost.status == models.PostStatus.published
+    )
+    if tenant_id is not None:
+        query = query.filter(models.BlogPost.tenant_id == tenant_id)
+    posts = query.order_by(models.BlogPost.created_at.desc()).offset(skip).limit(limit).all()
+    return [
+        {**format_blog_post(p, db), "tenant_id": p.tenant_id, "tenant_name": p.tenant.name}
+        for p in posts
+    ]
+
+@app.get("/api/public/posts/{post_id}")
+def get_public_post(post_id: int, db: Session = Depends(get_db)):
+    post = db.query(models.BlogPost).filter(
+        models.BlogPost.id == post_id,
+        models.BlogPost.status == models.PostStatus.published
+    ).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    return {**format_blog_post(post, db), "tenant_id": post.tenant_id, "tenant_name": post.tenant.name}
 
 # Dashboard Endpoints
 @app.get("/api/dashboard/stats", response_model=schemas.DashboardStats)

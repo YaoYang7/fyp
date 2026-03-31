@@ -74,6 +74,17 @@ export interface GroupUser {
   published_posts: number;
 }
 
+export interface PublicTenant {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+export interface PublicPost extends BlogPost {
+  tenant_id: number;
+  tenant_name: string;
+}
+
 export const dashboardApi = {
   // Get dashboard statistics
   getStats: async (): Promise<DashboardStats> => {
@@ -169,6 +180,24 @@ export const dashboardApi = {
   // Get all users in the same group (tenant)
   getGroupUsers: async (): Promise<GroupUser[]> => {
     const response = await api.get('/users');
+    return response.data;
+  },
+
+  // Public endpoints (no auth required)
+  getPublicTenants: async (): Promise<PublicTenant[]> => {
+    const response = await api.get('/public/tenants');
+    return response.data;
+  },
+
+  getPublicPosts: async (tenantId?: number, limit: number = 50): Promise<PublicPost[]> => {
+    const response = await api.get('/public/posts', {
+      params: { tenant_id: tenantId, limit },
+    });
+    return response.data;
+  },
+
+  getPublicPost: async (postId: number): Promise<PublicPost> => {
+    const response = await api.get(`/public/posts/${postId}`);
     return response.data;
   },
 };
