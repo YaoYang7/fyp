@@ -25,6 +25,7 @@ const drawerWidth = 240;
 
 const navigationItems = [
   { label: 'Home', path: '/home', requiresAuth: false },
+  { label: 'Explore Posts', path: '/explore', requiresAuth: false },
   { label: 'Dashboard', path: '/dashboard', requiresAuth: true },
   { label: 'Create New Post', path: '/create_post', requiresAuth: true },
   { label: 'Manage Posts', path: '/manage_blog', requiresAuth: true },
@@ -36,6 +37,7 @@ const navigationItems = [
 ] as const;
 
 const PAGE_TITLES: Record<string, string> = {
+  '/explore': 'Explore Posts',
   '/dashboard': 'Dashboard',
   '/create_post': 'Create Post',
   '/manage_blog': 'Manage Posts',
