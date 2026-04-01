@@ -200,6 +200,11 @@ export const dashboardApi = {
     const response = await api.get(`/public/posts/${postId}`);
     return response.data;
   },
+
+  getPublicPostComments: async (postId: number): Promise<Comment[]> => {
+    const response = await api.get(`/public/posts/${postId}/comments`);
+    return response.data;
+  },
 };
 
 export default api;

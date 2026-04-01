@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import type { RootState } from '../store/store';
 import {
   Box,
   Paper,
@@ -28,6 +30,7 @@ import * as styles from './GroupBlogFeedsStyles';
 
 const PublicFeed: React.FC = () => {
   const navigate = useNavigate();
+  const isLoggedIn = useSelector((state: RootState) => state.auth.isLoggedIn);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [posts, setPosts] = useState<PublicPost[]>([]);
@@ -80,14 +83,16 @@ const PublicFeed: React.FC = () => {
       <Paper sx={styles.paper}>
         <Box sx={styles.headerRow}>
           <Typography variant="h6">Explore Posts</Typography>
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={<LoginIcon />}
-            onClick={() => navigate('/home')}
-          >
-            Login / Register
-          </Button>
+          {!isLoggedIn && (
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<LoginIcon />}
+              onClick={() => navigate('/home')}
+            >
+              Login / Register
+            </Button>
+          )}
         </Box>
 
         {tenants.length > 0 && (

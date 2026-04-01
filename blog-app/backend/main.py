@@ -219,6 +219,20 @@ def get_public_post(post_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Post not found")
     return {**format_blog_post(post, db), "tenant_id": post.tenant_id, "tenant_name": post.tenant.name}
 
+@app.get("/api/public/posts/{post_id}/comments")
+def get_public_post_comments(post_id: int, db: Session = Depends(get_db)):
+    post = db.query(models.BlogPost).filter(
+        models.BlogPost.id == post_id,
+        models.BlogPost.status == models.PostStatus.published
+    ).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    comments = db.query(models.Comment).filter(
+        models.Comment.post_id == post_id,
+        models.Comment.tenant_id == post.tenant_id
+    ).order_by(models.Comment.created_at.desc()).all()
+    return [format_comment(c) for c in comments]
+
 # Dashboard Endpoints
 @app.get("/api/dashboard/stats", response_model=schemas.DashboardStats)
 def get_dashboard_stats(
