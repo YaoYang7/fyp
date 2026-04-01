@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from app import models, schemas, crud
 from app.db import get_db
 from app.auth import get_current_user
-from app.security import create_access_token, verify_token
+from app.security import create_access_token
 
 app = FastAPI(title="Blog Application API", version="1.0.0")
 
@@ -522,27 +522,17 @@ async def upload_file(
     return {"url": f"/uploads/{current_user.tenant_id}/{unique_name}"}
 
 
-# Serve uploaded files with tenant isolation
+# Serve uploaded files (public — files are embedded in published blog posts)
 @app.get("/uploads/{tenant_id}/{filename}")
 async def serve_upload(
     tenant_id: int,
     filename: str,
-    token: str = Query(...),
 ):
-    """Serve uploaded files with auth and tenant isolation via query-param token."""
-    payload = verify_token(token)
-    if not payload:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-
-    if int(payload.get("tenant_id", -1)) != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied")
-
     blob = _get_bucket().blob(f"{tenant_id}/{filename}")
     if not blob.exists():
         raise HTTPException(status_code=404, detail="File not found")
 
     credentials, _ = google.auth.default()
-    google.auth.transport.requests.Request().session  # ensure transport is available
     auth_req = google.auth.transport.requests.Request()
     credentials.refresh(auth_req)
     signed_url = blob.generate_signed_url(
