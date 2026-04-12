@@ -32,8 +32,8 @@ services:
       DATABASE_URL: postgresql://bloguser:${POSTGRES_PASSWORD}@postgres:5432/blogdb
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
-    volumes:
-      - uploads_data:/app/uploads
+      GCS_BUCKET_NAME: ${GCS_BUCKET_NAME}
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/gcp-key.json
     networks:
       - blog_net
     healthcheck:
@@ -63,7 +63,6 @@ services:
 
 volumes:
   postgres_data:
-  uploads_data:
 
 networks:
   blog_net:
