@@ -90,33 +90,3 @@ gcloud run deploy blog-frontend \
 | `GCS_BUCKET_NAME` | Backend | GCS bucket for media uploads |
 | `VITE_API_BASE_URL` | Frontend (build arg) | Backend Cloud Run URL |
 
-## API Overview
-
-### Public (no authentication)
-
-| Method | Path | Description |
-|---|---|---|
-| GET | `/api/public/tenants` | List all groups |
-| GET | `/api/public/posts` | Browse all published posts |
-| GET | `/api/public/posts/{id}` | Read a published post |
-| GET | `/api/public/posts/{id}/comments` | Read comments on a published post |
-
-### Authentication
-
-| Method | Path | Description |
-|---|---|---|
-| POST | `/user_api/register` | Register and create/join a group |
-| POST | `/user_api/login` | Log in, receive JWT token |
-
-### Authenticated
-
-| Method | Path | Description |
-|---|---|---|
-| GET | `/api/dashboard/stats` | Personal dashboard stats |
-| GET/POST | `/api/posts` | List your posts / create a post |
-| GET/PUT/DELETE | `/api/posts/{id}` | Read, update, or delete a post |
-| GET | `/api/posts/feed` | Published posts in your group |
-| GET | `/api/posts/search` | Search posts by title or content |
-| POST/DELETE | `/api/posts/{id}/comments` | Add or delete a comment |
-| POST | `/api/upload` | Upload an image or video to GCS |
-| GET | `/api/users` | List members of your group |
