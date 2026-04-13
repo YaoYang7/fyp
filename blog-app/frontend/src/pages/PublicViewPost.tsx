@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import type { RootState } from '../store/store';
 import {
   Box,
   Paper,
@@ -11,70 +12,52 @@ import {
   Chip,
   Divider,
   TextField,
-  IconButton,
   Avatar,
   List,
   ListItem,
   ListItemAvatar,
   ListItemText,
+  IconButton,
   Tooltip,
 } from '@mui/material';
-import { ArrowBack, CalendarToday, Delete, Comment as CommentIcon } from '@mui/icons-material';
+import { ArrowBack, CalendarToday, Login as LoginIcon, Delete, Comment as CommentIcon } from '@mui/icons-material';
 import { dashboardApi } from '../services/dashboardAPI';
-import type { BlogPost, Comment } from '../services/dashboardAPI';
-import type { RootState } from '../store/store';
+import type { PublicPost, Comment } from '../services/dashboardAPI';
 import SafeHTML from '../components/SafeHTML';
 import * as styles from './ViewPostStyles';
-import {
-  VARIANT_OUTLINED, VARIANT_TEXT, VARIANT_CONTAINED,
-  VARIANT_H4, VARIANT_H6, VARIANT_BODY2, VARIANT_SUBTITLE1, VARIANT_SUBTITLE2, VARIANT_CAPTION,
-  COLOR_TEXT_SECONDARY, COLOR_SUCCESS, COLOR_ACTION, COLOR_ERROR, COLOR_PRIMARY_MAIN,
-  SIZE_SMALL,
-} from './COMMON_CONSTANTS';
 
-const FEED_ROUTE = '/feed';
-const FALLBACK_ERROR_MSG = 'Failed to load post.';
-const NO_COMMENTS_MSG = 'No comments yet. Be the first to comment!';
-const COMMENT_PLACEHOLDER = 'Write a comment...';
-const DELETE_TOOLTIP = 'Delete comment';
-const BACK_LABEL = 'Back to Feed';
-const SUBMIT_LABEL = 'Submit Comment';
-const SUBMITTING_LABEL = 'Submitting...';
-
-const ViewPost: React.FC = () => {
+const PublicViewPost: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const isLoggedIn = useSelector((state: RootState) => state.auth.isLoggedIn);
+  const currentUser = useSelector((state: RootState) => state.auth.user);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
-  const [post, setPost] = useState<BlogPost | null>(null);
+  const [post, setPost] = useState<PublicPost | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentText, setCommentText] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
 
-  const currentUser = useSelector((state: RootState) => state.auth.user);
-
   useEffect(() => {
-    const fetchPostAndComments = async () => {
+    const fetchPost = async () => {
       if (!id) return;
       try {
         setLoading(true);
         setError('');
-        const [postData, commentsData] = await Promise.all([
-          dashboardApi.getPost(Number(id)),
-          dashboardApi.getPostComments(Number(id)),
+        const [data, commentsData] = await Promise.all([
+          dashboardApi.getPublicPost(Number(id)),
+          dashboardApi.getPublicPostComments(Number(id)),
         ]);
-        setPost(postData);
+        setPost(data);
         setComments(commentsData);
       } catch (err: any) {
         console.error('Error fetching post:', err);
-        const message = err.response?.data?.detail || FALLBACK_ERROR_MSG;
-        setError(message);
+        setError(err.response?.data?.detail || 'Failed to load post.');
       } finally {
         setLoading(false);
       }
     };
-
-    fetchPostAndComments();
+    fetchPost();
   }, [id]);
 
   const handleSubmitComment = async () => {
@@ -101,6 +84,8 @@ const ViewPost: React.FC = () => {
     }
   };
 
+  const canComment = isLoggedIn && post && currentUser?.tenant_id === post.tenant_id;
+
   if (loading) {
     return (
       <Box sx={styles.loadingContainer}>
@@ -112,15 +97,9 @@ const ViewPost: React.FC = () => {
   if (error) {
     return (
       <Box sx={styles.pageContainer}>
-        <Alert severity="error" sx={styles.errorAlert}>
-          {error}
-        </Alert>
-        <Button
-          variant={VARIANT_OUTLINED}
-          startIcon={<ArrowBack />}
-          onClick={() => navigate(FEED_ROUTE)}
-        >
-          {BACK_LABEL}
+        <Alert severity="error" sx={styles.errorAlert}>{error}</Alert>
+        <Button variant="outlined" startIcon={<ArrowBack />} onClick={() => navigate('/explore')}>
+          Back to Explore
         </Button>
       </Box>
     );
@@ -131,34 +110,34 @@ const ViewPost: React.FC = () => {
   return (
     <Box sx={styles.pageContainer}>
       <Button
-        variant={VARIANT_TEXT}
+        variant="text"
         startIcon={<ArrowBack />}
-        onClick={() => navigate(FEED_ROUTE)}
+        onClick={() => navigate('/explore')}
         sx={styles.backButton}
       >
-        {BACK_LABEL}
+        Back to Explore
       </Button>
 
       <Paper sx={styles.paper}>
-        <Typography variant={VARIANT_H4} sx={styles.title}>
+        <Typography variant="h4" sx={styles.title}>
           {post.title}
         </Typography>
 
         <Box sx={styles.metaRow}>
-          <Typography variant={VARIANT_BODY2} color={COLOR_TEXT_SECONDARY}>
+          <Typography variant="body2" color="text.secondary">
             By <strong>{post.author}</strong>
           </Typography>
+          <Chip label={post.tenant_name} size="small" variant="outlined" />
           <Box sx={styles.metaIconGroup}>
             <CalendarToday sx={styles.metaIcon} />
-            <Typography variant={VARIANT_BODY2} color={COLOR_TEXT_SECONDARY}>
+            <Typography variant="body2" color="text.secondary">
               {post.date}
             </Typography>
           </Box>
-          <Chip label={post.status} size={SIZE_SMALL} color={COLOR_SUCCESS} />
         </Box>
 
         {post.summary && (
-          <Typography variant={VARIANT_SUBTITLE1} color={COLOR_TEXT_SECONDARY} sx={styles.summary}>
+          <Typography variant="subtitle1" color="text.secondary" sx={styles.summary}>
             {post.summary}
           </Typography>
         )}
@@ -170,34 +149,31 @@ const ViewPost: React.FC = () => {
         </Box>
       </Paper>
 
-      {/* Comments Section */}
       <Box sx={styles.commentsSection}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-          <CommentIcon color={COLOR_ACTION} />
-          <Typography variant={VARIANT_H6}>
-            Comments ({comments.length})
-          </Typography>
+          <CommentIcon color="action" />
+          <Typography variant="h6">Comments ({comments.length})</Typography>
         </Box>
         <Divider sx={styles.divider} />
 
         {comments.length === 0 ? (
-          <Typography variant={VARIANT_BODY2} color={COLOR_TEXT_SECONDARY} sx={{ mb: 2 }}>
-            {NO_COMMENTS_MSG}
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            No comments yet.
           </Typography>
         ) : (
           <List disablePadding>
             {comments.map((comment) => (
               <ListItem key={comment.id} sx={styles.commentItem}>
                 <ListItemAvatar>
-                  <Avatar sx={{ bgcolor: COLOR_PRIMARY_MAIN }}>
+                  <Avatar sx={{ bgcolor: 'primary.main' }}>
                     {comment.author.charAt(0).toUpperCase()}
                   </Avatar>
                 </ListItemAvatar>
                 <ListItemText
                   primary={
                     <Box sx={styles.commentHeader}>
-                      <Typography variant={VARIANT_SUBTITLE2}>{comment.author}</Typography>
-                      <Typography variant={VARIANT_CAPTION} color={COLOR_TEXT_SECONDARY}>
+                      <Typography variant="subtitle2">{comment.author}</Typography>
+                      <Typography variant="caption" color="text.secondary">
                         {new Date(comment.created_at).toLocaleString()}
                       </Typography>
                     </Box>
@@ -205,13 +181,9 @@ const ViewPost: React.FC = () => {
                   secondary={comment.content}
                 />
                 {currentUser && comment.author_id === currentUser.id && (
-                  <Tooltip title={DELETE_TOOLTIP}>
-                    <IconButton
-                      size={SIZE_SMALL}
-                      onClick={() => handleDeleteComment(comment.id)}
-                      color={COLOR_ERROR}
-                    >
-                      <Delete fontSize={SIZE_SMALL} />
+                  <Tooltip title="Delete comment">
+                    <IconButton size="small" onClick={() => handleDeleteComment(comment.id)} color="error">
+                      <Delete fontSize="small" />
                     </IconButton>
                   </Tooltip>
                 )}
@@ -220,29 +192,48 @@ const ViewPost: React.FC = () => {
           </List>
         )}
 
-        {/* New comment form */}
-        <TextField
-          fullWidth
-          multiline
-          minRows={2}
-          placeholder={COMMENT_PLACEHOLDER}
-          value={commentText}
-          onChange={(e) => setCommentText(e.target.value)}
-          sx={styles.commentTextField}
-        />
-        <Box sx={styles.commentSubmitRow}>
-          <Button
-            variant={VARIANT_CONTAINED}
-            onClick={handleSubmitComment}
-            disabled={submittingComment || !commentText.trim()}
-            sx={styles.commentSubmitButton}
-          >
-            {submittingComment ? SUBMITTING_LABEL : SUBMIT_LABEL}
-          </Button>
-        </Box>
+        {canComment ? (
+          <>
+            <TextField
+              fullWidth
+              multiline
+              minRows={2}
+              placeholder="Write a comment..."
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              sx={styles.commentTextField}
+            />
+            <Box sx={styles.commentSubmitRow}>
+              <Button
+                variant="contained"
+                onClick={handleSubmitComment}
+                disabled={submittingComment || !commentText.trim()}
+                sx={styles.commentSubmitButton}
+              >
+                {submittingComment ? 'Submitting...' : 'Submit Comment'}
+              </Button>
+            </Box>
+          </>
+        ) : (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 2 }}>
+            <Typography variant="body2" color="text.secondary">
+              {isLoggedIn ? 'Join this group to comment.' : 'Want to join the conversation?'}
+            </Typography>
+            {!isLoggedIn && (
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<LoginIcon />}
+                onClick={() => navigate('/home')}
+              >
+                Login / Register
+              </Button>
+            )}
+          </Box>
+        )}
       </Box>
     </Box>
   );
 };
 
-export default ViewPost;
+export default PublicViewPost;

@@ -42,6 +42,16 @@ export interface DashboardStats {
   totalComments: number;
 }
 
+export interface Comment {
+  id: number;
+  content: string;
+  author: string;
+  author_id: number;
+  post_id: number;
+  created_at: string;
+  updated_at?: string;
+}
+
 export interface CreatePostData {
   title: string;
   content: string;
@@ -62,6 +72,17 @@ export interface GroupUser {
   email: string;
   created_at: string;
   published_posts: number;
+}
+
+export interface PublicTenant {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+export interface PublicPost extends BlogPost {
+  tenant_id: number;
+  tenant_name: string;
 }
 
 export const dashboardApi = {
@@ -117,9 +138,23 @@ export const dashboardApi = {
   },
 
   // Get comments for a specific post
-  getPostComments: async (postId: number): Promise<any[]> => {
+  getPostComments: async (postId: number): Promise<Comment[]> => {
     const response = await api.get(`/posts/${postId}/comments`);
     return response.data;
+  },
+
+  // Create a new comment on a post
+  createComment: async (postId: number, content: string): Promise<Comment> => {
+    const response = await api.post(`/posts/${postId}/comments`, {
+      content,
+      post_id: postId,
+    });
+    return response.data;
+  },
+
+  // Delete a comment
+  deleteComment: async (postId: number, commentId: number): Promise<void> => {
+    await api.delete(`/posts/${postId}/comments/${commentId}`);
   },
 
   // Upload a file (image or video)
@@ -145,6 +180,29 @@ export const dashboardApi = {
   // Get all users in the same group (tenant)
   getGroupUsers: async (): Promise<GroupUser[]> => {
     const response = await api.get('/users');
+    return response.data;
+  },
+
+  // Public endpoints (no auth required)
+  getPublicTenants: async (): Promise<PublicTenant[]> => {
+    const response = await api.get('/public/tenants');
+    return response.data;
+  },
+
+  getPublicPosts: async (tenantId?: number, limit: number = 50): Promise<PublicPost[]> => {
+    const response = await api.get('/public/posts', {
+      params: { tenant_id: tenantId, limit },
+    });
+    return response.data;
+  },
+
+  getPublicPost: async (postId: number): Promise<PublicPost> => {
+    const response = await api.get(`/public/posts/${postId}`);
+    return response.data;
+  },
+
+  getPublicPostComments: async (postId: number): Promise<Comment[]> => {
+    const response = await api.get(`/public/posts/${postId}/comments`);
     return response.data;
   },
 };

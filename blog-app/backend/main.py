@@ -3,6 +3,7 @@ import uuid
 import time
 import threading
 from collections import defaultdict
+from typing import Optional
 
 from fastapi import FastAPI, Depends, HTTPException, Query, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -267,6 +268,69 @@ def format_blog_post(post: models.BlogPost, db: Session) -> dict:
         "updated_at": post.updated_at.isoformat() if post.updated_at else None
     }
 
+# Helper function to format comment for frontend
+def format_comment(comment: models.Comment) -> dict:
+    """
+    Format a Comment model to match the frontend Comment interface
+    """
+    return {
+        "id": comment.id,
+        "content": comment.content,
+        "author": comment.author.username,
+        "author_id": comment.author_id,
+        "post_id": comment.post_id,
+        "created_at": comment.created_at.isoformat(),
+        "updated_at": comment.updated_at.isoformat() if comment.updated_at else None,
+    }
+
+# Public Endpoints (no auth required)
+@app.get("/api/public/tenants")
+def get_public_tenants(db: Session = Depends(get_db)):
+    tenants = db.query(models.Tenant).order_by(models.Tenant.name).all()
+    return [{"id": t.id, "name": t.name, "slug": t.slug} for t in tenants]
+
+@app.get("/api/public/posts")
+def get_public_posts(
+    tenant_id: Optional[int] = Query(default=None),
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=100),
+    db: Session = Depends(get_db)
+):
+    query = db.query(models.BlogPost).filter(
+        models.BlogPost.status == models.PostStatus.published
+    )
+    if tenant_id is not None:
+        query = query.filter(models.BlogPost.tenant_id == tenant_id)
+    posts = query.order_by(models.BlogPost.created_at.desc()).offset(skip).limit(limit).all()
+    return [
+        {**format_blog_post(p, db), "tenant_id": p.tenant_id, "tenant_name": p.tenant.name}
+        for p in posts
+    ]
+
+@app.get("/api/public/posts/{post_id}")
+def get_public_post(post_id: int, db: Session = Depends(get_db)):
+    post = db.query(models.BlogPost).filter(
+        models.BlogPost.id == post_id,
+        models.BlogPost.status == models.PostStatus.published
+    ).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    return {**format_blog_post(post, db), "tenant_id": post.tenant_id, "tenant_name": post.tenant.name}
+
+@app.get("/api/public/posts/{post_id}/comments")
+def get_public_post_comments(post_id: int, db: Session = Depends(get_db)):
+    post = db.query(models.BlogPost).filter(
+        models.BlogPost.id == post_id,
+        models.BlogPost.status == models.PostStatus.published
+    ).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    comments = db.query(models.Comment).filter(
+        models.Comment.post_id == post_id,
+        models.Comment.tenant_id == post.tenant_id
+    ).order_by(models.Comment.created_at.desc()).all()
+    return [format_comment(c) for c in comments]
+
 # Dashboard Endpoints
 @app.get("/api/dashboard/stats", response_model=schemas.DashboardStats)
 def get_dashboard_stats(
@@ -430,7 +494,7 @@ def get_post_comments(
         raise HTTPException(status_code=404, detail="Post not found")
 
     comments = crud.get_post_comments(db, post_id=post_id, tenant_id=current_user.tenant_id)
-    return comments
+    return [format_comment(c) for c in comments]
 
 @app.post("/api/posts/{post_id}/comments", status_code=201)
 def create_comment(
@@ -447,7 +511,30 @@ def create_comment(
         raise HTTPException(status_code=404, detail="Post not found")
 
     new_comment = crud.create_comment(db, comment=comment, user_id=current_user.id, tenant_id=current_user.tenant_id)
-    return new_comment
+    return format_comment(new_comment)
+
+@app.delete("/api/posts/{post_id}/comments/{comment_id}", status_code=204)
+def delete_comment(
+    post_id: int,
+    comment_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a comment. Only the comment author can delete their own comment.
+    """
+    comment = crud.get_comment(db, comment_id=comment_id, tenant_id=current_user.tenant_id)
+    if not comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+
+    if comment.post_id != post_id:
+        raise HTTPException(status_code=404, detail="Comment not found")
+
+    if comment.author_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this comment")
+
+    crud.delete_comment(db, comment_id=comment_id, tenant_id=current_user.tenant_id)
+    return None
 
 # File Upload Endpoint
 @app.post("/api/upload")

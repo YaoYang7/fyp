@@ -10,6 +10,7 @@ import {
 import CreateIcon from "@mui/icons-material/Create";
 import PeopleIcon from "@mui/icons-material/People";
 import DashboardIcon from "@mui/icons-material/Dashboard";
+import { useNavigate } from "react-router-dom";
 
 interface LandingProps {
     onSwitchToLogin: () => void;
@@ -17,6 +18,7 @@ interface LandingProps {
 }
 
 const LandingComponent: React.FC<LandingProps> = (props) => {
+    const navigate = useNavigate();
 
     const features = [
         {
@@ -80,7 +82,7 @@ const LandingComponent: React.FC<LandingProps> = (props) => {
                                 Simple and easy to use, templates offered. Beginner friendly. Start your blogging journey today.
                             </Typography>
 
-                            <Stack direction="row" spacing={2}>
+                            <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
                                 <Button
                                     variant="contained"
                                     size="large"
@@ -116,6 +118,25 @@ const LandingComponent: React.FC<LandingProps> = (props) => {
                                     }}
                                 >
                                     Login
+                                </Button>
+
+                                <Button
+                                    variant="outlined"
+                                    size="large"
+                                    onClick={() => navigate('/explore')}
+                                    sx={{
+                                        borderColor: "white",
+                                        color: "white",
+                                        fontWeight: 600,
+                                        px: 4,
+                                        py: 1.5,
+                                        "&:hover": {
+                                            borderColor: "white",
+                                            bgcolor: "rgba(255, 255, 255, 0.1)"
+                                        }
+                                    }}
+                                >
+                                    Browse Posts
                                 </Button>
                             </Stack>
                         </Box>

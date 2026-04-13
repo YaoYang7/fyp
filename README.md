@@ -1,143 +1,140 @@
-# Multi Tenant Blog Platform
+# Multi-Tenant Blog Platform
 
-A full-stack blog platform built with React, TypeScript, FastAPI, and PostgreSQL.
+A full-stack blog platform where users register into named groups (tenants) and collaboratively write, publish, and comment on blog posts. Published posts are also visible to the public without an account.
 
-## Requirements
+## Features
 
-### Frontend
-- Node.js (v18 or higher recommended)
-- npm (comes with Node.js)
-
-### Backend
-- Python 3.10 or higher
-- PostgreSQL 12 or higher
-
-### Tools
-- PowerShell (for Windows development script)
-- Google Chrome (for automated browser launch)
+- **Multi-tenant groups** — users create or join a named group; posts and comments are scoped per group
+- **Rich text editor** — Tiptap-powered editor with image and video embedding
+- **Media uploads** — images and videos stored in Google Cloud Storage (500 MB per file, 2 GB per user)
+- **Draft / publish workflow** — posts stay private as drafts until explicitly published
+- **Comments** — tenant members can comment on any published post in their group
+- **Public explore feed** — anyone can browse and read published posts without logging in
+- **Dashboard** — personal stats (posts written, comments received, group activity)
+- **Group user directory** — view all members of your group and their published post counts
 
 ## Tech Stack
 
 ### Frontend
-- React 19.2.0
-- TypeScript 5.9.3
-- Vite 7.2.4
-- Material-UI (MUI) 7.3.7
-- TailwindCSS 4.1.18
-- React Router DOM 7.12.0
-- Axios 1.13.2
+- React 19.2.0, TypeScript 5.9.3, Vite 7.2.4
+- Material-UI 7.3.7, TailwindCSS 4.1.18
+- Redux Toolkit 2.11.2, React Router DOM 7.12.0
+- Tiptap 3.19.0, Axios 1.13.2, DOMPurify 3.3.1
 
 ### Backend
-- FastAPI 0.104.1
-- SQLAlchemy 2.0.23
-- PostgreSQL with psycopg2-binary
-- Alembic (database migrations)
-- Pydantic 2.5.0
-- Passlib (password hashing)
+- FastAPI 0.104.1, SQLAlchemy 2.0.23, Pydantic 2.5.0
+- PostgreSQL (psycopg2-binary 2.9.9), Alembic 1.12.1
+- bcrypt 5.0.0, python-jose, google-cloud-storage 2.16.0
 
-## Docker Deployment
+## Cloud Run Deployment
+
+The backend and frontend are deployed as separate Cloud Run services.
 
 ### Prerequisites
 
-- [Docker](https://docs.docker.com/get-docker/)
-- [Docker Compose](https://docs.docker.com/compose/install/)
+- Google Cloud project with Artifact Registry enabled
+- Cloud SQL (PostgreSQL) instance or external PostgreSQL
+- GCS bucket with a service account that has Storage Object Admin permissions
 
-### 1. Create a `.env` file
-
-Create a `.env` file in the project root (next to `docker-compose.yml`):
-
-```env
-# PostgreSQL password
-POSTGRES_PASSWORD=your_secure_password
-
-# JWT signing secret — generate with:
-# python -c "import secrets; print(secrets.token_hex(32))"
-JWT_SECRET_KEY=your_long_random_secret
-
-# Allowed CORS origins (comma-separated)
-# Use your server IP or domain in production
-CORS_ORIGINS=http://localhost
-```
-
-### 2. Build and start all services
+### 1. Build and push the backend
 
 ```bash
-docker compose up --build
+docker build -t REGION-docker.pkg.dev/PROJECT_ID/REPO/blog-backend ./blog-app/backend
+docker push REGION-docker.pkg.dev/PROJECT_ID/REPO/blog-backend
 ```
 
-This starts three services:
-
-- `postgres` — PostgreSQL 15 database (internal only)
-- `backend` — FastAPI app (Uvicorn, 2 workers) (internal only)
-- `frontend` — React SPA served by Nginx (port **80**)
-
-The app is available at **http://localhost** once all health checks pass (~30 s on first boot).
-
-### 3. Stop services
+Deploy to Cloud Run:
 
 ```bash
-# Stop containers, keep volumes (data is preserved)
-docker compose down
-
-# Stop containers AND delete all data (database + uploads)
-docker compose down -v
+gcloud run deploy blog-backend \
+  --image REGION-docker.pkg.dev/PROJECT_ID/REPO/blog-backend \
+  --region REGION \
+  --set-env-vars DATABASE_URL=postgresql://user:pass@host:5432/blogdb \
+  --set-env-vars JWT_SECRET_KEY=your_long_random_secret \
+  --set-env-vars CORS_ORIGINS=https://your-frontend.a.run.app \
+  --set-env-vars GCS_BUCKET_NAME=your-gcs-bucket
 ```
 
-### Persistent volumes
+Use `--service-account` with Workload Identity instead of `GOOGLE_APPLICATION_CREDENTIALS` where possible.
 
-- `postgres_data` — PostgreSQL database files
-- `uploads_data` — User-uploaded files
+The backend listens on `$PORT` (injected by Cloud Run, defaults to 8080).
 
-### How Nginx routes requests
+### 2. Build and push the frontend
 
-Nginx (port 80) serves the React SPA and proxies API routes to the backend internally — no backend port is exposed to the host.
+Pass the backend URL as a build argument — it is baked into the JS bundle at build time:
 
-- `/api/` → `http://backend:8000/api/`
-- `/user_api/` → `http://backend:8000/user_api/`
-- `/uploads/` → `http://backend:8000/uploads/`
-- all other paths → React SPA (`index.html`)
+```bash
+docker build \
+  --build-arg VITE_API_BASE_URL=https://your-backend.a.run.app \
+  -t REGION-docker.pkg.dev/PROJECT_ID/REPO/blog-frontend \
+  ./blog-app/frontend
+docker push REGION-docker.pkg.dev/PROJECT_ID/REPO/blog-frontend
+```
+
+Deploy to Cloud Run:
+
+```bash
+gcloud run deploy blog-frontend \
+  --image REGION-docker.pkg.dev/PROJECT_ID/REPO/blog-frontend \
+  --region REGION \
+  --allow-unauthenticated
+```
+
+### Environment variables
+
+| Variable | Service | Description |
+|---|---|---|
+| `DATABASE_URL` | Backend | PostgreSQL connection string |
+| `JWT_SECRET_KEY` | Backend | JWT signing secret |
+| `CORS_ORIGINS` | Backend | Comma-separated allowed origins (frontend URL) |
+| `GCS_BUCKET_NAME` | Backend | GCS bucket for media uploads |
+| `VITE_API_BASE_URL` | Frontend (build arg) | Backend Cloud Run URL |
 
 ---
 
-## Local Development Setup
+## Running Locally with Docker
 
-### 1. Backend Setup
-Install dependencies:
+### Prerequisites
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+
+### 1. Create a `.env` file in the project root
+
+```env
+POSTGRES_PASSWORD=yourpassword
+DATABASE_URL=postgresql://bloguser:yourpassword@postgres:5432/blogdb
+JWT_SECRET_KEY=your_long_random_secret
+CORS_ORIGINS=http://localhost
+```
+
+Generate a secure `JWT_SECRET_KEY` with:
+
 ```bash
-pip install -r requirements.txt
+python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
-Configure environment variables:
-- Create a `.env` file in the backend directory
-- Add your database connection string and other required variables
+### 2. Build the images
 
-Set up the database:
 ```bash
-# Create PostgreSQL database
-# Then run migrations
-alembic upgrade head
+docker compose build
 ```
 
-### 2. Frontend Setup
+### 3. Start the stack
 
-Navigate to the frontend directory:
 ```bash
-cd blog-app/frontend
+docker compose up -d
 ```
 
-Install dependencies:
+The app will be available at **http://localhost**.
+
+### 4. Stop the stack
+
 ```bash
-npm install
+docker compose down
 ```
 
-### 3. Running the Application
+To also delete the database and uploaded files:
 
-#### Quick Start (Windows)
-Run both frontend and backend with one command:
-```powershell
-.\runDev.ps1
+```bash
+docker compose down -v
 ```
-This script will:
-- Start the FastAPI backend on `http://localhost:8000`
-- Start the Vite dev server on `http://localhost:5173`
-- Automatically open the application in Google Chrome
